@@ -123,6 +123,77 @@ export async function getUsers() {
     }
 }
 
+export async function createUser(data: { email: string; password: string; name?: string; role?: string }) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create user');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('createUser API error:', error);
+        throw error;
+    }
+}
+
+export async function updateUser(id: number | string, data: { name?: string; email?: string; role?: string }) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update user');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateUser API error:', error);
+        throw error;
+    }
+}
+
+export async function deleteUser(id: number | string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete user');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('deleteUser API error:', error);
+        throw error;
+    }
+}
+
 export async function getSites() {
     const token = await getToken();
     try {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, FlatList, View, TouchableOpacity, Alert, RefreshControl, Modal, TextInput, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
-import { Stack } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -233,8 +232,6 @@ export default function TasksScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <Stack.Screen options={{ title: 'Tasks', headerShown: false }} />
-
             <View style={styles.header}>
                 <ThemedText type="title">Tasks</ThemedText>
                 <ThemedText style={styles.subtitle}>Manage site tasks</ThemedText>
