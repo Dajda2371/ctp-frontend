@@ -35,6 +35,10 @@ export default function ManageSitesScreen() {
     const [coordinator, setCoordinator] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    // Delete Modal State
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [siteToDelete, setSiteToDelete] = useState<Site | null>(null);
+
     const fetchSites = async () => {
         try {
             const data = await getSites();
@@ -104,26 +108,22 @@ export default function ManageSitesScreen() {
     };
 
     const handleDelete = (site: Site) => {
-        Alert.alert(
-            'Delete Site',
-            `Are you sure you want to delete "${site.name}"?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteSite(site.id);
-                            fetchSites();
-                            if (modalVisible) closeModal();
-                        } catch (error: any) {
-                            Alert.alert('Error', error.message || 'Failed to delete site');
-                        }
-                    },
-                },
-            ]
-        );
+        setSiteToDelete(site);
+        setDeleteModalVisible(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!siteToDelete) return;
+
+        try {
+            await deleteSite(siteToDelete.id);
+            fetchSites();
+            setDeleteModalVisible(false);
+            setSiteToDelete(null);
+            closeModal(); // Close the edit modal as well
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to delete site');
+        }
     };
 
     if (!canManageSites(user?.role)) {
@@ -147,9 +147,7 @@ export default function ManageSitesScreen() {
                 <TouchableOpacity onPress={() => openModal(item)} style={styles.actionButton}>
                     <IconSymbol name="pencil" size={20} color={theme.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionButton}>
-                    <IconSymbol name="trash" size={20} color="#ff4444" />
-                </TouchableOpacity>
+
             </View>
         </ThemedView>
     );
@@ -247,14 +245,46 @@ export default function ManageSitesScreen() {
 
                         {editingSite && (
                             <TouchableOpacity
-                                style={[styles.deleteButton, { borderColor: '#ff4444' }]}
+                                style={[styles.deleteButton, { backgroundColor: '#ff4444', borderColor: '#ff4444' }]}
                                 onPress={() => handleDelete(editingSite)}
                             >
-                                <ThemedText style={{ color: '#ff4444', fontWeight: 'bold' }}>Delete Site</ThemedText>
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete Site</ThemedText>
                             </TouchableOpacity>
                         )}
                     </ThemedView>
                 </KeyboardAvoidingView>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={deleteModalVisible}
+                onRequestClose={() => setDeleteModalVisible(false)}
+            >
+                <View style={styles.alertOverlay}>
+                    <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
+                        <ThemedText type="subtitle" style={styles.alertTitle}>Delete Site</ThemedText>
+                        <ThemedText style={styles.alertMessage}>
+                            Are you sure you want to delete "{siteToDelete?.name}"? This action cannot be undone.
+                        </ThemedText>
+
+                        <View style={styles.alertActions}>
+                            <TouchableOpacity
+                                style={styles.alertButton}
+                                onPress={() => setDeleteModalVisible(false)}
+                            >
+                                <ThemedText style={{ color: theme.text }}>Cancel</ThemedText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.alertButton, { backgroundColor: '#ff4444' }]}
+                                onPress={confirmDelete}
+                            >
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    </ThemedView>
+                </View>
             </Modal>
         </ThemedView>
     );
@@ -384,5 +414,44 @@ const styles = StyleSheet.create({
         marginTop: 12,
         borderWidth: 1,
         backgroundColor: 'transparent',
-    }
+    },
+    // Custom Alert Styles
+    alertOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    alertContent: {
+        width: '100%',
+        maxWidth: 340,
+        borderRadius: 20,
+        padding: 24,
+        borderWidth: 1,
+        alignItems: 'center',
+    },
+    alertTitle: {
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    alertMessage: {
+        textAlign: 'center',
+        marginBottom: 24,
+        opacity: 0.7,
+        lineHeight: 20,
+    },
+    alertActions: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    alertButton: {
+        flex: 1,
+        height: 44,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    },
 });
