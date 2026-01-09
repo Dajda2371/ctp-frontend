@@ -25,21 +25,14 @@ export default function LoginScreen() {
 
         setLoading(true);
         try {
-            // In a real app, you'd store the token/user info
-            // const data = await login(email, password);
-
-            // Mocking successful login for now as we don't have a real backend URL yet
-            setTimeout(() => {
-                setLoading(false);
-                router.replace('/');
-            }, 1500);
-
-            // For actual API call (uncomment/modify when ready):
-            /*
+            // Perform real API login
             const data = await login(email, password);
+            console.log('Login successful:', data);
+
+            // TODO: Store the access_token securely
+
             setLoading(false);
             router.replace('/');
-            */
         } catch (error: any) {
             setLoading(false);
             Alert.alert('Login Failed', error.message || 'Something went wrong. Please try again.');
