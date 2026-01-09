@@ -33,6 +33,7 @@ const MAPPING = {
   'xmark': 'close',
   'building.2.crop.circle.fill': 'business',
   'person.2.fill': 'people',
+  'line.3.horizontal': 'menu',
 } as unknown as IconMapping;
 
 /**
