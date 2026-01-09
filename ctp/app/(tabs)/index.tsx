@@ -1,17 +1,45 @@
-import { StyleSheet, FlatList, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState, useEffect, useCallback } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { MOCK_SITES, Site } from '@/constants/mockData';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getSites } from '@/constants/api'; // Import API call
+import { Site } from '@/constants/mockData'; // Ensure Site type is available (or move to types.ts)
 
 export default function SitesScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+
+    const [sites, setSites] = useState<Site[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchSites = async () => {
+        try {
+            const data = await getSites();
+            setSites(data);
+        } catch (error: any) {
+            console.error(error);
+            // Optional: Alert.alert('Error', 'Failed to fetch sites');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSites();
+    }, []);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchSites();
+    }, []);
 
     const renderSiteItem = ({ item }: { item: Site }) => (
         <TouchableOpacity
@@ -32,7 +60,7 @@ export default function SitesScreen() {
             <View style={styles.cardFooter}>
                 <View style={styles.coordinatorInfo}>
                     <IconSymbol name="person.fill" size={14} color={theme.icon} />
-                    <ThemedText style={styles.footerText}>Coordinator: {item.coordinator}</ThemedText>
+                    <ThemedText style={styles.footerText}>Coordinator: {item.coordinator || 'Unassigned'}</ThemedText>
                 </View>
             </View>
         </TouchableOpacity>
@@ -45,13 +73,27 @@ export default function SitesScreen() {
                 <ThemedText style={styles.headerSubtitle}>Manage buildings and technical tasks</ThemedText>
             </View>
 
-            <FlatList
-                data={MOCK_SITES}
-                renderItem={renderSiteItem}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-            />
+            {loading ? (
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                </View>
+            ) : (
+                <FlatList
+                    data={sites}
+                    renderItem={renderSiteItem}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.center}>
+                            <ThemedText>No sites found.</ThemedText>
+                        </View>
+                    }
+                />
+            )}
 
             <TouchableOpacity
                 style={[styles.fab, { backgroundColor: theme.primary }]}
@@ -86,6 +128,7 @@ const styles = StyleSheet.create({
     listContent: {
         padding: 20,
         paddingBottom: 100,
+        flexGrow: 1,
     },
     siteCard: {
         padding: 16,
@@ -127,6 +170,12 @@ const styles = StyleSheet.create({
         fontSize: 13,
         marginLeft: 6,
         opacity: 0.7,
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 50,
     },
     fab: {
         position: 'absolute',

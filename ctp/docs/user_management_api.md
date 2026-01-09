@@ -11,7 +11,41 @@ The following endpoints are required for the User Management feature:
 
 #### 1. Fetch User List
 - **Endpoint**: `GET /users`
-- **Response**: Array of user objects including `id`, `email`, `role`, and `name`.
+- **Authentication**: Required (Bearer Token)
+- **Response**: JSON array of user objects.
+
+**Example Response:**
+```json
+[
+  {
+    "id": "uuid-string",
+    "email": "user@ctp.eu",
+    "name": "Jane Doe",
+    "role": "admin"
+  },
+  {
+    "id": "uuid-string-2",
+    "email": "tech@ctp.eu",
+    "name": "Bob Smith",
+    "role": "technician"
+  }
+]
+```
+
+**Frontend Fetch Logic:**
+The frontend will use the `fetch` API (or a wrapper) to call this endpoint. It will expect an array of objects that match the `UserRole` enum values defined in `constants/roles.ts`.
+
+```typescript
+// Example frontend fetch call
+const response = await fetch(`${API_BASE_URL}/users`, {
+    headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+    },
+});
+const data = await response.json();
+// data should match the User interface
+```
 
 #### 2. Update User Role
 - **Endpoint**: `PATCH /users/{id}/role`

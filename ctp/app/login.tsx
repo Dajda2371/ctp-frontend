@@ -29,7 +29,10 @@ export default function LoginScreen() {
             const data = await login(email, password);
             console.log('Login successful:', data);
 
-            // TODO: Store the access_token securely
+            if (data.access_token) {
+                const { saveToken } = require('@/constants/api');
+                await saveToken(data.access_token);
+            }
 
             setLoading(false);
             router.replace('/');
