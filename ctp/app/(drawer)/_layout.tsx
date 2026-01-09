@@ -40,20 +40,29 @@ export default function DrawerLayout() {
                 }}
             >
                 <Drawer.Screen
-                    name="(tabs)"
+                    name="index"
                     options={{
-                        drawerLabel: 'Home',
-                        title: 'Home',
-                        drawerIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
+                        drawerLabel: 'Sites',
+                        title: 'Sites',
+                        drawerIcon: ({ color }) => <IconSymbol size={24} name="building.2.fill" color={color} />,
+                    }}
+                />
+
+                <Drawer.Screen
+                    name="tasks"
+                    options={{
+                        drawerLabel: 'Tasks',
+                        title: 'Tasks',
+                        drawerIcon: ({ color }) => <IconSymbol size={24} name="checklist" color={color} />,
                     }}
                 />
 
                 <Drawer.Screen
                     name="manage_sites"
                     options={{
-                        drawerLabel: 'Manage Sites',
-                        title: 'Manage Sites',
-                        drawerIcon: ({ color }) => <IconSymbol size={24} name="building.2.fill" color={color} />,
+                        drawerLabel: 'Site Management',
+                        title: 'Site Management',
+                        drawerIcon: ({ color }) => <IconSymbol size={24} name="building.2.crop.circle.fill" color={color} />,
                         drawerItemStyle: { display: canManageSites(user?.role) ? 'flex' : 'none' },
                     }}
                 />
