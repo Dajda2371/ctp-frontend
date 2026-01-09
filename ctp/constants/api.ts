@@ -21,3 +21,25 @@ export async function login(email: string, password: string) {
         throw error;
     }
 }
+
+export async function register(email: string, password: string) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Registration failed');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Register API error:', error);
+        throw error;
+    }
+}

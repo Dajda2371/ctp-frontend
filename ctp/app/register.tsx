@@ -1,41 +1,47 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, View, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { login } from '@/constants/api';
+import { register } from '@/constants/api';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password.');
+    const handleRegister = async () => {
+        if (!email || !password || !confirmPassword) {
+            Alert.alert('Error', 'Please fill in all fields.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match.');
             return;
         }
 
         setLoading(true);
         try {
-            // Perform real API login
-            const data = await login(email, password);
-            console.log('Login successful:', data);
-
-            // TODO: Store the access_token securely
-
+            await register(email, password);
+            // Assuming direct login or navigation to login after success.
+            // The implementation plan mentioned navigating to home or login. 
+            // "login.tsx navigates to `/` (Home) on success. I'll do the same for register."
             setLoading(false);
-            router.replace('/');
+            Alert.alert('Success', 'Account created successfully!', [
+                { text: 'OK', onPress: () => router.replace('/') }
+            ]);
         } catch (error: any) {
             setLoading(false);
-            Alert.alert('Login Failed', error.message || 'Something went wrong. Please try again.');
+            Alert.alert('Registration Failed', error.message || 'Something went wrong. Please try again.');
         }
     };
 
@@ -50,8 +56,8 @@ export default function LoginScreen() {
                         <View style={[styles.logoContainer, { backgroundColor: theme.primary }]}>
                             <ThemedText style={styles.logoText}>CTP</ThemedText>
                         </View>
-                        <ThemedText type="title" style={styles.title}>Welcome Back</ThemedText>
-                        <ThemedText style={styles.subtitle}>Sign in to manage your sites and tasks</ThemedText>
+                        <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
+                        <ThemedText style={styles.subtitle}>Sign up to get started</ThemedText>
                     </View>
 
                     <View style={styles.form}>
@@ -80,26 +86,34 @@ export default function LoginScreen() {
                             />
                         </View>
 
-                        <TouchableOpacity style={styles.forgotBtn}>
-                            <ThemedText style={{ color: theme.primary, fontWeight: 'bold' }}>Forgot Password?</ThemedText>
-                        </TouchableOpacity>
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.label}>Confirm Password</ThemedText>
+                            <TextInput
+                                style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
+                                placeholder="••••••••"
+                                placeholderTextColor={theme.icon + '80'}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                secureTextEntry
+                            />
+                        </View>
 
                         <TouchableOpacity
-                            style={[styles.loginBtn, { backgroundColor: theme.primary }]}
-                            onPress={handleLogin}
+                            style={[styles.loginBtn, { backgroundColor: theme.primary, marginTop: 12 }]}
+                            onPress={handleRegister}
                             disabled={loading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <ThemedText style={styles.loginBtnText}>Sign In</ThemedText>
+                                <ThemedText style={styles.loginBtnText}>Sign Up</ThemedText>
                             )}
                         </TouchableOpacity>
 
                         <View style={styles.footer}>
-                            <ThemedText style={styles.footerText}>Don't have an account? </ThemedText>
-                            <TouchableOpacity onPress={() => router.push('/register')}>
-                                <ThemedText style={[styles.linkText, { color: theme.primary }]}>Sign Up</ThemedText>
+                            <ThemedText style={styles.footerText}>Already have an account? </ThemedText>
+                            <TouchableOpacity onPress={() => router.back()}>
+                                <ThemedText style={[styles.linkText, { color: theme.primary }]}>Sign In</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -163,10 +177,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         fontSize: 16,
     },
-    forgotBtn: {
-        alignSelf: 'flex-end',
-        marginBottom: 32,
-    },
     loginBtn: {
         height: 56,
         borderRadius: 16,
@@ -177,6 +187,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
+        marginBottom: 24,
     },
     loginBtnText: {
         color: '#fff',
@@ -187,7 +198,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 16,
     },
     footerText: {
         fontSize: 16,
