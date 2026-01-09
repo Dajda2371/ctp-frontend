@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { login } from '@/constants/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -16,6 +17,8 @@ export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const { signIn } = useAuth();
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -30,12 +33,10 @@ export default function LoginScreen() {
             console.log('Login successful:', data);
 
             if (data.access_token) {
-                const { saveToken } = require('@/constants/api');
-                await saveToken(data.access_token);
+                await signIn(data.access_token);
+            } else {
+                throw new Error('No access token received');
             }
-
-            setLoading(false);
-            router.replace('/');
         } catch (error: any) {
             setLoading(false);
             Alert.alert('Login Failed', error.message || 'Something went wrong. Please try again.');

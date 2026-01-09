@@ -28,6 +28,11 @@ const MAPPING = {
   'minus.circle.fill': 'remove-circle',
   'magnifyingglass': 'search',
   'filter': 'filter-list',
+  'pencil': 'edit',
+  'trash': 'delete',
+  'xmark': 'close',
+  'building.2.crop.circle.fill': 'business',
+  'person.2.fill': 'people',
 } as unknown as IconMapping;
 
 /**
