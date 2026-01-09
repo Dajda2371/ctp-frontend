@@ -216,3 +216,143 @@ export async function deleteSite(id: number) {
         throw error;
     }
 }
+
+// Tasks API
+export async function getTasks(siteId?: number, status?: string) {
+    const token = await getToken();
+    try {
+        let url = `${API_BASE_URL}/tasks`;
+        const params = new URLSearchParams();
+        if (siteId !== undefined) params.append('site_id', siteId.toString());
+        if (status) params.append('status', status);
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch tasks');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getTasks API error:', error);
+        throw error;
+    }
+}
+
+export async function getTask(id: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch task');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getTask API error:', error);
+        throw error;
+    }
+}
+
+export async function createTask(data: {
+    site_id: number;
+    title: string;
+    description?: string;
+    status?: string;
+    priority?: string;
+    assignee?: string;
+    photos?: string[];
+}) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create task');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('createTask API error:', error);
+        throw error;
+    }
+}
+
+export async function updateTask(id: number, data: {
+    site_id?: number;
+    title?: string;
+    description?: string;
+    status?: string;
+    priority?: string;
+    assignee?: string;
+    photos?: string[];
+}) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update task');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateTask API error:', error);
+        throw error;
+    }
+}
+
+export async function deleteTask(id: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete task');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('deleteTask API error:', error);
+        throw error;
+    }
+}
