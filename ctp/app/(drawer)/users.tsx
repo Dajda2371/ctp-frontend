@@ -9,6 +9,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { UserRole, ROLE_LABELS, getManageableRoles, canEditUser } from '@/constants/roles';
 import { getUsers, createUser, updateUser, deleteUser } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { SelectModal } from '@/components/SelectModal';
 
 interface User {
     id: string | number; // Handle both string and number IDs from API
@@ -38,6 +39,9 @@ export default function UsersScreen() {
     // Delete Modal State
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+    // Custom Picker Modal State
+    const [rolePickerVisible, setRolePickerVisible] = useState(false);
 
     const manageableRoles = getManageableRoles(currentUser?.role);
 
@@ -286,14 +290,7 @@ export default function UsersScreen() {
                                     ) : (
                                         <TouchableOpacity
                                             style={{ width: '100%', height: '100%', justifyContent: 'center' }}
-                                            onPress={() => {
-                                                const options = manageableRoles.map(r => ({
-                                                    text: ROLE_LABELS[r],
-                                                    onPress: () => setRole(r)
-                                                }));
-                                                options.push({ text: 'Cancel', style: 'cancel' as const } as any);
-                                                Alert.alert('Select Role', '', options as any);
-                                            }}
+                                            onPress={() => setRolePickerVisible(true)}
                                         >
                                             <ThemedText style={{ color: theme.text }}>
                                                 {ROLE_LABELS[role]}
@@ -335,7 +332,7 @@ export default function UsersScreen() {
                     <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
                         <ThemedText type="subtitle" style={styles.alertTitle}>Delete User</ThemedText>
                         <ThemedText style={styles.alertMessage}>
-                            Are you sure you want to delete "{userToDelete?.name || userToDelete?.email}"? This action cannot be undone.
+                            Are you sure you want to delete &quot;{userToDelete?.name || userToDelete?.email}&quot;? This action cannot be undone.
                         </ThemedText>
 
                         <View style={styles.alertActions}>
@@ -355,6 +352,16 @@ export default function UsersScreen() {
                     </ThemedView>
                 </View>
             </Modal>
+
+            {/* Custom Picker Modal */}
+            <SelectModal
+                visible={rolePickerVisible}
+                onClose={() => setRolePickerVisible(false)}
+                onSelect={(value) => setRole(value as UserRole)}
+                options={manageableRoles.map(r => ({ label: ROLE_LABELS[r], value: r }))}
+                selectedValue={role}
+                title="Select Role"
+            />
         </ThemedView>
     );
 }

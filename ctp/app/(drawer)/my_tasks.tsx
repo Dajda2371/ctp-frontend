@@ -10,6 +10,8 @@ import { getMyTasks, getSites, getSite, createTask, updateTask, deleteTask } fro
 import { useAuth } from '@/contexts/AuthContext';
 import { LocationPicker } from '@/components/LocationPicker';
 import { TaskCard } from '@/components/TaskCard';
+import { SelectModal } from '@/components/SelectModal';
+import { DatePickerModal } from '@/components/DatePickerModal';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -79,6 +81,12 @@ export default function MyTasksScreen() {
     // Delete Modal State
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+    // Custom Picker Modal States
+    const [sitePickerVisible, setSitePickerVisible] = useState(false);
+    const [statusPickerVisible, setStatusPickerVisible] = useState(false);
+    const [priorityPickerVisible, setPriorityPickerVisible] = useState(false);
+    const [datePickerVisible, setDatePickerVisible] = useState(false);
 
     const fetchTasks = async () => {
         try {
@@ -386,15 +394,7 @@ export default function MyTasksScreen() {
                                         ) : (
                                             <TouchableOpacity
                                                 style={{ width: '100%', height: '100%', justifyContent: 'center' }}
-                                                onPress={() => {
-                                                    const options = [
-                                                        { text: 'To Do', onPress: () => setStatus('TODO') },
-                                                        { text: 'In Progress', onPress: () => setStatus('IN_PROGRESS') },
-                                                        { text: 'Done', onPress: () => setStatus('DONE') },
-                                                        { text: 'Cancel', style: 'cancel' as const }
-                                                    ];
-                                                    Alert.alert('Select Status', '', options);
-                                                }}
+                                                onPress={() => setStatusPickerVisible(true)}
                                             >
                                                 <ThemedText style={{ color: theme.text }}>
                                                     {status === 'TODO' ? 'To Do' : status === 'IN_PROGRESS' ? 'In Progress' : 'Done'}
@@ -429,14 +429,7 @@ export default function MyTasksScreen() {
                                         ) : (
                                             <TouchableOpacity
                                                 style={{ width: '100%', height: '100%', justifyContent: 'center' }}
-                                                onPress={() => {
-                                                    const options = Object.keys(PRIORITY_MAP).map(p => ({
-                                                        text: p.charAt(0) + p.slice(1).toLowerCase(),
-                                                        onPress: () => setPriority(p)
-                                                    }));
-                                                    options.push({ text: 'Cancel', style: 'cancel' as const } as any);
-                                                    Alert.alert('Select Priority', '', options as any);
-                                                }}
+                                                onPress={() => setPriorityPickerVisible(true)}
                                             >
                                                 <ThemedText style={{ color: theme.text }}>
                                                     {priority.charAt(0) + priority.slice(1).toLowerCase()}
@@ -468,13 +461,14 @@ export default function MyTasksScreen() {
                                             }}
                                         />
                                     ) : (
-                                        <TextInput
-                                            style={[styles.input, { borderWidth: 0, height: '100%', borderColor: 'transparent' }]}
-                                            value={dueDate}
-                                            onChangeText={setDueDate}
-                                            placeholder="YYYY-MM-DD"
-                                            placeholderTextColor={theme.icon + '80'}
-                                        />
+                                        <TouchableOpacity
+                                            style={{ width: '100%', height: '100%', justifyContent: 'center', paddingHorizontal: 16 }}
+                                            onPress={() => setDatePickerVisible(true)}
+                                        >
+                                            <ThemedText style={{ color: dueDate ? theme.text : (theme.icon + '80') }}>
+                                                {dueDate || 'Select Date'}
+                                            </ThemedText>
+                                        </TouchableOpacity>
                                     )}
                                 </View>
                             </View>
@@ -560,7 +554,7 @@ export default function MyTasksScreen() {
                     <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
                         <ThemedText type="subtitle" style={styles.alertTitle}>Delete Task</ThemedText>
                         <ThemedText style={styles.alertMessage}>
-                            Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
+                            Are you sure you want to delete &quot;{taskToDelete?.title}&quot;? This action cannot be undone.
                         </ThemedText>
 
                         <View style={styles.alertActions}>
@@ -580,6 +574,52 @@ export default function MyTasksScreen() {
                     </ThemedView>
                 </View>
             </Modal>
+
+            {/* Custom Picker Modals */}
+            <SelectModal
+                visible={sitePickerVisible}
+                onClose={() => setSitePickerVisible(false)}
+                onSelect={(value) => handleSiteChange(value)}
+                options={[
+                    { label: 'Select Site', value: '' },
+                    ...sites.map(s => ({ label: s.name, value: String(s.id) }))
+                ]}
+                selectedValue={siteId}
+                title="Select Site"
+            />
+
+            <SelectModal
+                visible={statusPickerVisible}
+                onClose={() => setStatusPickerVisible(false)}
+                onSelect={setStatus}
+                options={[
+                    { label: 'To Do', value: 'TODO' },
+                    { label: 'In Progress', value: 'IN_PROGRESS' },
+                    { label: 'Done', value: 'DONE' },
+                ]}
+                selectedValue={status}
+                title="Select Status"
+            />
+
+            <SelectModal
+                visible={priorityPickerVisible}
+                onClose={() => setPriorityPickerVisible(false)}
+                onSelect={setPriority}
+                options={Object.keys(PRIORITY_MAP).map(p => ({
+                    label: p.charAt(0) + p.slice(1).toLowerCase(),
+                    value: p
+                }))}
+                selectedValue={priority}
+                title="Select Priority"
+            />
+
+            <DatePickerModal
+                visible={datePickerVisible}
+                onClose={() => setDatePickerVisible(false)}
+                onSelect={setDueDate}
+                selectedDate={dueDate}
+                title="Select Due Date"
+            />
         </ThemedView >
     );
 }

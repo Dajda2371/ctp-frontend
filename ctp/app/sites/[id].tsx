@@ -9,6 +9,8 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getSite, getTasks, createTask, updateTask, deleteTask, getUsers } from '@/constants/api';
 import { TaskCard } from '@/components/TaskCard';
+import { SelectModal } from '@/components/SelectModal';
+import { DatePickerModal } from '@/components/DatePickerModal';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -77,6 +79,12 @@ export default function SiteTasksScreen() {
     const [assignee, setAssignee] = useState('');
     const [dueDate, setDueDate] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    // Custom Picker Modal State
+    const [statusPickerVisible, setStatusPickerVisible] = useState(false);
+    const [priorityPickerVisible, setPriorityPickerVisible] = useState(false);
+    const [assigneePickerVisible, setAssigneePickerVisible] = useState(false);
+    const [datePickerVisible, setDatePickerVisible] = useState(false);
 
     // Delete Modal State
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -327,46 +335,68 @@ export default function SiteTasksScreen() {
                                 <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
                                     <ThemedText style={styles.label}>Status</ThemedText>
                                     <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                        <select
-                                            value={status}
-                                            onChange={(e) => setStatus(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                height: 50,
-                                                border: 'none',
-                                                background: 'transparent',
-                                                color: theme.text,
-                                                fontSize: 16,
-                                            }}
-                                        >
-                                            <option value="TODO">To Do</option>
-                                            <option value="IN_PROGRESS">In Progress</option>
-                                            <option value="DONE">Done</option>
-                                        </select>
+                                        {Platform.OS === 'web' ? (
+                                            <select
+                                                value={status}
+                                                onChange={(e) => setStatus(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    height: 50,
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    color: theme.text,
+                                                    fontSize: 16,
+                                                }}
+                                            >
+                                                <option value="TODO">To Do</option>
+                                                <option value="IN_PROGRESS">In Progress</option>
+                                                <option value="DONE">Done</option>
+                                            </select>
+                                        ) : (
+                                            <TouchableOpacity
+                                                style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                                onPress={() => setStatusPickerVisible(true)}
+                                            >
+                                                <ThemedText style={{ color: theme.text }}>
+                                                    {status === 'TODO' ? 'To Do' : status === 'IN_PROGRESS' ? 'In Progress' : 'Done'}
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
                                 </View>
 
                                 <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
                                     <ThemedText style={styles.label}>Priority</ThemedText>
                                     <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                        <select
-                                            value={priority}
-                                            onChange={(e) => setPriority(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                height: 50,
-                                                border: 'none',
-                                                background: 'transparent',
-                                                color: theme.text,
-                                                fontSize: 16,
-                                            }}
-                                        >
-                                            <option value="LOWEST">Lowest</option>
-                                            <option value="LOW">Low</option>
-                                            <option value="MEDIUM">Medium</option>
-                                            <option value="HIGH">High</option>
-                                            <option value="HIGHEST">Highest</option>
-                                        </select>
+                                        {Platform.OS === 'web' ? (
+                                            <select
+                                                value={priority}
+                                                onChange={(e) => setPriority(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    height: 50,
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    color: theme.text,
+                                                    fontSize: 16,
+                                                }}
+                                            >
+                                                <option value="LOWEST">Lowest</option>
+                                                <option value="LOW">Low</option>
+                                                <option value="MEDIUM">Medium</option>
+                                                <option value="HIGH">High</option>
+                                                <option value="HIGHEST">Highest</option>
+                                            </select>
+                                        ) : (
+                                            <TouchableOpacity
+                                                style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                                onPress={() => setPriorityPickerVisible(true)}
+                                            >
+                                                <ThemedText style={{ color: theme.text }}>
+                                                    {priority.charAt(0) + priority.slice(1).toLowerCase()}
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
                                 </View>
                             </View>
@@ -374,44 +404,66 @@ export default function SiteTasksScreen() {
                             <View style={styles.formGroup}>
                                 <ThemedText style={styles.label}>Due Date</ThemedText>
                                 <View style={[styles.picker, { borderColor: theme.neutral + '40', padding: 0 }]}>
-                                    <input
-                                        type="date"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                            border: 'none',
-                                            background: 'transparent',
-                                            color: theme.text,
-                                            fontSize: 16,
-                                            padding: '0 16px',
-                                            fontFamily: 'inherit'
-                                        }}
-                                    />
+                                    {Platform.OS === 'web' ? (
+                                        <input
+                                            type="date"
+                                            value={dueDate}
+                                            onChange={(e) => setDueDate(e.target.value)}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                border: 'none',
+                                                background: 'transparent',
+                                                color: theme.text,
+                                                fontSize: 16,
+                                                padding: '0 16px',
+                                                fontFamily: 'inherit'
+                                            }}
+                                        />
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={{ width: '100%', height: '100%', justifyContent: 'center', paddingHorizontal: 16 }}
+                                            onPress={() => setDatePickerVisible(true)}
+                                        >
+                                            <ThemedText style={{ color: dueDate ? theme.text : (theme.icon + '80') }}>
+                                                {dueDate || 'Select Date'}
+                                            </ThemedText>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             </View>
 
                             <View style={styles.formGroup}>
                                 <ThemedText style={styles.label}>Assignee</ThemedText>
                                 <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                    <select
-                                        value={assignee}
-                                        onChange={(e) => setAssignee(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            height: 50,
-                                            border: 'none',
-                                            background: 'transparent',
-                                            color: theme.text,
-                                            fontSize: 16,
-                                        }}
-                                    >
-                                        <option value="">Unassigned</option>
-                                        {users.map(u => (
-                                            <option key={u.id} value={u.name}>{u.name}</option>
-                                        ))}
-                                    </select>
+                                    {Platform.OS === 'web' ? (
+                                        <select
+                                            value={assignee}
+                                            onChange={(e) => setAssignee(e.target.value)}
+                                            style={{
+                                                width: '100%',
+                                                height: 50,
+                                                border: 'none',
+                                                background: 'transparent',
+                                                color: theme.text,
+                                                fontSize: 16,
+                                            }}
+                                        >
+                                            <option value="">Unassigned</option>
+                                            {users.map(u => (
+                                                <option key={u.id} value={u.name}>{u.name}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                            onPress={() => setAssigneePickerVisible(true)}
+                                        >
+                                            <ThemedText style={{ color: assignee ? theme.text : (theme.icon + '80') }}>
+                                                {assignee || 'Unassigned'}
+                                            </ThemedText>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             </View>
                         </ScrollView>
@@ -436,6 +488,53 @@ export default function SiteTasksScreen() {
                 </KeyboardAvoidingView>
             </Modal>
 
+            {/* Custom Picker Modals */}
+            <SelectModal
+                visible={statusPickerVisible}
+                onClose={() => setStatusPickerVisible(false)}
+                onSelect={setStatus}
+                options={[
+                    { label: 'To Do', value: 'TODO' },
+                    { label: 'In Progress', value: 'IN_PROGRESS' },
+                    { label: 'Done', value: 'DONE' },
+                ]}
+                selectedValue={status}
+                title="Select Status"
+            />
+
+            <SelectModal
+                visible={priorityPickerVisible}
+                onClose={() => setPriorityPickerVisible(false)}
+                onSelect={setPriority}
+                options={Object.keys(PRIORITY_MAP).map(p => ({
+                    label: p.charAt(0) + p.slice(1).toLowerCase(),
+                    value: p
+                }))}
+                selectedValue={priority}
+                title="Select Priority"
+            />
+
+            <DatePickerModal
+                visible={datePickerVisible}
+                onClose={() => setDatePickerVisible(false)}
+                onSelect={setDueDate}
+                selectedDate={dueDate}
+                title="Select Due Date"
+            />
+
+            <SelectModal
+                visible={assigneePickerVisible}
+                onClose={() => setAssigneePickerVisible(false)}
+                onSelect={setAssignee}
+                options={[
+                    { label: 'Unassigned', value: '' },
+                    ...users.map(u => ({ label: u.name, value: u.name }))
+                ]}
+                selectedValue={assignee}
+                title="Select Assignee"
+            />
+
+
             {/* Delete Confirmation Modal */}
             <Modal
                 animationType="fade"
@@ -447,7 +546,7 @@ export default function SiteTasksScreen() {
                     <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
                         <ThemedText type="subtitle" style={styles.alertTitle}>Delete Task</ThemedText>
                         <ThemedText style={styles.alertMessage}>
-                            Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
+                            Are you sure you want to delete &quot;{taskToDelete?.title}&quot;? This action cannot be undone.
                         </ThemedText>
 
                         <View style={styles.alertActions}>

@@ -14,6 +14,7 @@ import { LocationPicker } from '@/components/LocationPicker';
 import { getAddressFromCoordinates } from '@/utils/geocoding';
 import { Linking } from 'react-native';
 import { SiteCard, Site } from '@/components/SiteCard';
+import { SelectModal } from '@/components/SelectModal';
 
 
 
@@ -49,6 +50,10 @@ export default function ManageSitesScreen() {
     // Delete Modal State
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [siteToDelete, setSiteToDelete] = useState<Site | null>(null);
+
+    // Custom Picker Modal States
+    const [fmPickerVisible, setFmPickerVisible] = useState(false);
+    const [pmPickerVisible, setPmPickerVisible] = useState(false);
 
     const fetchSites = async () => {
         try {
@@ -296,17 +301,7 @@ export default function ManageSitesScreen() {
                                 ) : (
                                     <TouchableOpacity
                                         style={{ width: '100%', height: '100%', justifyContent: 'center' }}
-                                        onPress={() => {
-                                            const options = [
-                                                { text: 'None', onPress: () => setSelectedFacilityManager('') },
-                                                ...facilityManagers.map(u => ({
-                                                    text: u.name,
-                                                    onPress: () => setSelectedFacilityManager(u.id.toString())
-                                                })),
-                                                { text: 'Cancel', style: 'cancel' as const }
-                                            ];
-                                            Alert.alert('Select Facility Manager', '', options);
-                                        }}
+                                        onPress={() => setFmPickerVisible(true)}
                                     >
                                         <ThemedText style={{ color: selectedFacilityManager ? theme.text : (theme.icon + '80') }}>
                                             {facilityManagers.find(u => u.id.toString() === selectedFacilityManager)?.name || 'Select Manager'}
@@ -340,17 +335,7 @@ export default function ManageSitesScreen() {
                                 ) : (
                                     <TouchableOpacity
                                         style={{ width: '100%', height: '100%', justifyContent: 'center' }}
-                                        onPress={() => {
-                                            const options = [
-                                                { text: 'None', onPress: () => setSelectedPropertyManager('') },
-                                                ...propertyManagers.map(u => ({
-                                                    text: u.name,
-                                                    onPress: () => setSelectedPropertyManager(u.id.toString())
-                                                })),
-                                                { text: 'Cancel', style: 'cancel' as const }
-                                            ];
-                                            Alert.alert('Select Property Manager', '', options);
-                                        }}
+                                        onPress={() => setPmPickerVisible(true)}
                                     >
                                         <ThemedText style={{ color: selectedPropertyManager ? theme.text : (theme.icon + '80') }}>
                                             {propertyManagers.find(u => u.id.toString() === selectedPropertyManager)?.name || 'Select Manager'}
@@ -435,7 +420,7 @@ export default function ManageSitesScreen() {
                     <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
                         <ThemedText type="subtitle" style={styles.alertTitle}>Delete Site</ThemedText>
                         <ThemedText style={styles.alertMessage}>
-                            Are you sure you want to delete "{siteToDelete?.name}"? This action cannot be undone.
+                            Are you sure you want to delete &quot;{siteToDelete?.name}&quot;? This action cannot be undone.
                         </ThemedText>
 
                         <View style={styles.alertActions}>
@@ -455,6 +440,31 @@ export default function ManageSitesScreen() {
                     </ThemedView>
                 </View>
             </Modal>
+
+            {/* Custom Picker Modals */}
+            <SelectModal
+                visible={fmPickerVisible}
+                onClose={() => setFmPickerVisible(false)}
+                onSelect={setSelectedFacilityManager}
+                options={[
+                    { label: 'None', value: '' },
+                    ...facilityManagers.map(u => ({ label: u.name, value: u.id.toString() }))
+                ]}
+                selectedValue={selectedFacilityManager}
+                title="Select Facility Manager"
+            />
+
+            <SelectModal
+                visible={pmPickerVisible}
+                onClose={() => setPmPickerVisible(false)}
+                onSelect={setSelectedPropertyManager}
+                options={[
+                    { label: 'None', value: '' },
+                    ...propertyManagers.map(u => ({ label: u.name, value: u.id.toString() }))
+                ]}
+                selectedValue={selectedPropertyManager}
+                title="Select Property Manager"
+            />
         </ThemedView>
     );
 }
