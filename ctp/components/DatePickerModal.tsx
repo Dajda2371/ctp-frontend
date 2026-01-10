@@ -46,7 +46,7 @@ export function DatePickerModal({
     const daysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate();
 
     const handleConfirm = () => {
-        const formatted = `${date.year} -${String(date.month).padStart(2, '0')} -${String(date.day).padStart(2, '0')} `;
+        const formatted = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
         onSelect(formatted);
         onClose();
     };

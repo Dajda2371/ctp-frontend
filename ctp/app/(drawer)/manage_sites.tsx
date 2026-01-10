@@ -7,7 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getSites, createSite, updateSite, deleteSite, getPossiblePropertyManagers, getPossibleFacilityManagers } from '@/constants/api';
+import { getSites, createSite, updateSite, deleteSite, getPossiblePropertyManagers, getPossibleFacilityManagers, getUsers } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { canManageSites } from '@/constants/roles';
 import { LocationPicker } from '@/components/LocationPicker';
@@ -57,12 +57,22 @@ export default function ManageSitesScreen() {
 
     const fetchSites = async () => {
         try {
-            const [sitesData, facilityManagersData, propertyManagersData] = await Promise.all([
+            const [sitesData, facilityManagersData, propertyManagersData, usersData] = await Promise.all([
                 getSites(),
                 getPossibleFacilityManagers(),
-                getPossiblePropertyManagers()
+                getPossiblePropertyManagers(),
+                getUsers(), // Fetch all users for name lookup
             ]);
-            setSites(sitesData);
+
+            const usersMap = new Map((usersData as User[]).map(u => [u.id, u.name]));
+
+            const enrichedSites = (sitesData as Site[]).map(site => ({
+                ...site,
+                facility_manager_name: site.facility_manager ? usersMap.get(site.facility_manager) : null,
+                property_manager_name: site.property_manager ? usersMap.get(site.property_manager) : null,
+            }));
+
+            setSites(enrichedSites);
             setFacilityManagers(facilityManagersData);
             setPropertyManagers(propertyManagersData);
         } catch (error: any) {

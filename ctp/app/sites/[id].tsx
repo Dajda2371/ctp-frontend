@@ -240,11 +240,15 @@ export default function SiteTasksScreen() {
                 <View style={{ flexDirection: 'row', marginTop: 12, gap: 16 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <IconSymbol name="wrench.fill" size={14} color="rgba(255, 255, 255, 0.7)" />
-                        <ThemedText style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 13 }}>FM ID: {site?.facility_manager ?? 'None'}</ThemedText>
+                        <ThemedText style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 13 }}>
+                            FM: {users.find(u => u.id === site?.facility_manager)?.name || 'None'}
+                        </ThemedText>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <IconSymbol name="house.fill" size={14} color="rgba(255, 255, 255, 0.7)" />
-                        <ThemedText style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 13 }}>PM ID: {site?.property_manager ?? 'None'}</ThemedText>
+                        <ThemedText style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 13 }}>
+                            PM: {users.find(u => u.id === site?.property_manager)?.name || 'None'}
+                        </ThemedText>
                     </View>
                 </View>
 

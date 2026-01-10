@@ -7,8 +7,13 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getSites } from '@/constants/api'; // Import API call
+import { getSites, getUsers } from '@/constants/api'; // Import API call
 import { Site } from '@/components/SiteCard'; // Use Site type with manager names
+
+interface User {
+    id: number;
+    name: string;
+}
 
 export default function SitesScreen() {
     const router = useRouter();
@@ -21,8 +26,20 @@ export default function SitesScreen() {
 
     const fetchSites = async () => {
         try {
-            const data = await getSites();
-            setSites(data);
+            const [sitesData, usersData] = await Promise.all([
+                getSites(),
+                getUsers()
+            ]);
+
+            const usersMap = new Map((usersData as User[]).map(u => [u.id, u.name]));
+
+            const enrichedSites = (sitesData as Site[]).map(site => ({
+                ...site,
+                facility_manager_name: site.facility_manager ? usersMap.get(site.facility_manager) : null,
+                property_manager_name: site.property_manager ? usersMap.get(site.property_manager) : null,
+            }));
+
+            setSites(enrichedSites);
         } catch (error: any) {
             console.error(error);
             // Optional: Alert.alert('Error', 'Failed to fetch sites');
