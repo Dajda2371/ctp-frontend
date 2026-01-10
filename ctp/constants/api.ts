@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.EXPO_PUBLIC_BACKED_URL || '';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKED_URL || '';
 
 export async function login(email: string, password: string) {
     try {

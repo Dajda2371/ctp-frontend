@@ -1,0 +1,24 @@
+{
+    "build": {
+        "preview": {
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_BACKEND_URL": "http://109.164.126.32:8000"
+            }
+        },
+        "preview2": {
+            "android": {
+                "gradleCommand": ":app:assembleRelease"
+            }
+        },
+        "preview3": {
+            "developmentClient": true
+        },
+        "preview4": {
+            "distribution": "internal"
+        },
+        "production": {}
+    }
+}
