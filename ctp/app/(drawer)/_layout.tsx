@@ -90,9 +90,18 @@ export default function DrawerLayout() {
                 <Drawer.Screen
                     name="tasks"
                     options={{
-                        drawerLabel: 'Tasks',
-                        title: 'Tasks',
+                        drawerLabel: 'All Tasks',
+                        title: 'All Tasks',
                         drawerIcon: ({ color }) => <IconSymbol size={24} name="checklist" color={color} />,
+                    }}
+                />
+
+                <Drawer.Screen
+                    name="my_tasks"
+                    options={{
+                        drawerLabel: 'My Tasks',
+                        title: 'My Tasks',
+                        drawerIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
                     }}
                 />
 

@@ -358,6 +358,29 @@ export async function getTasks(siteId?: number, status?: string) {
     }
 }
 
+export async function getMyTasks() {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/me`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch my tasks');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getMyTasks API error:', error);
+        throw error;
+    }
+}
+
 export async function getTask(id: number) {
     const token = await getToken();
     try {
