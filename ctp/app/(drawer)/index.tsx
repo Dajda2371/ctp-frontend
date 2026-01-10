@@ -58,9 +58,15 @@ export default function SitesScreen() {
             </View>
 
             <View style={styles.cardFooter}>
-                <View style={styles.coordinatorInfo}>
-                    <IconSymbol name="person.fill" size={14} color={theme.icon} />
-                    <ThemedText style={styles.footerText}>Coordinator: {item.coordinator || 'Unassigned'}</ThemedText>
+                <View style={styles.managerRow}>
+                    <View style={styles.managerInfo}>
+                        <IconSymbol name="wrench.fill" size={12} color={theme.icon} />
+                        <ThemedText style={styles.footerText}>FM: {item.facility_manager || 'Unassigned'}</ThemedText>
+                    </View>
+                    <View style={[styles.managerInfo, { marginLeft: 16 }]}>
+                        <IconSymbol name="house.fill" size={12} color={theme.icon} />
+                        <ThemedText style={styles.footerText}>PM: {item.property_manager || 'Unassigned'}</ThemedText>
+                    </View>
                 </View>
             </View>
         </TouchableOpacity>
@@ -157,7 +163,12 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: 'rgba(0, 0, 0, 0.05)',
     },
-    coordinatorInfo: {
+    managerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+    },
+    managerInfo: {
         flexDirection: 'row',
         alignItems: 'center',
     },

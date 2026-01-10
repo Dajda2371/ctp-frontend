@@ -84,9 +84,6 @@ export default function LoginScreen() {
                             />
                         </View>
 
-                        <TouchableOpacity style={styles.forgotBtn}>
-                            <ThemedText style={{ color: theme.primary, fontWeight: 'bold' }}>Forgot Password?</ThemedText>
-                        </TouchableOpacity>
 
                         <TouchableOpacity
                             style={[styles.loginBtn, { backgroundColor: theme.primary }]}
@@ -100,12 +97,7 @@ export default function LoginScreen() {
                             )}
                         </TouchableOpacity>
 
-                        <View style={styles.footer}>
-                            <ThemedText style={styles.footerText}>Don't have an account? </ThemedText>
-                            <TouchableOpacity onPress={() => router.push('/register')}>
-                                <ThemedText style={[styles.linkText, { color: theme.primary }]}>Sign Up</ThemedText>
-                            </TouchableOpacity>
-                        </View>
+
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -167,15 +159,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         fontSize: 16,
     },
-    forgotBtn: {
-        alignSelf: 'flex-end',
-        marginBottom: 32,
-    },
+
     loginBtn: {
         height: 56,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
@@ -187,18 +177,5 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 16,
-    },
-    footerText: {
-        fontSize: 16,
-        opacity: 0.6,
-    },
-    linkText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
+
 });

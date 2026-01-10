@@ -7,21 +7,20 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getSites, createSite, updateSite, deleteSite } from '@/constants/api';
+import { getSites, createSite, updateSite, deleteSite, getPossiblePropertyManagers, getPossibleFacilityManagers } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { canManageSites } from '@/constants/roles';
 import { LocationPicker } from '@/components/LocationPicker';
 import { getAddressFromCoordinates } from '@/utils/geocoding';
 import { Linking } from 'react-native';
-import { SiteCard } from '@/components/SiteCard';
+import { SiteCard, Site } from '@/components/SiteCard';
 
-interface Site {
+
+
+interface User {
     id: number;
     name: string;
-    address: string;
-    coordinator: string;
-    latitude?: number;
-    longitude?: number;
+    role: string;
 }
 
 export default function ManageSitesScreen() {
@@ -30,6 +29,8 @@ export default function ManageSitesScreen() {
     const { user } = useAuth();
 
     const [sites, setSites] = useState<Site[]>([]);
+    const [facilityManagers, setFacilityManagers] = useState<User[]>([]);
+    const [propertyManagers, setPropertyManagers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -38,7 +39,8 @@ export default function ManageSitesScreen() {
     const [editingSite, setEditingSite] = useState<Site | null>(null);
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
-    const [coordinator, setCoordinator] = useState('');
+    const [selectedFacilityManager, setSelectedFacilityManager] = useState<string>('');
+    const [selectedPropertyManager, setSelectedPropertyManager] = useState<string>('');
     const [siteLatitude, setSiteLatitude] = useState<number | undefined>(undefined);
     const [siteLongitude, setSiteLongitude] = useState<number | undefined>(undefined);
     const [locationPickerVisible, setLocationPickerVisible] = useState(false);
@@ -50,10 +52,16 @@ export default function ManageSitesScreen() {
 
     const fetchSites = async () => {
         try {
-            const data = await getSites();
-            setSites(data);
+            const [sitesData, facilityManagersData, propertyManagersData] = await Promise.all([
+                getSites(),
+                getPossibleFacilityManagers(),
+                getPossiblePropertyManagers()
+            ]);
+            setSites(sitesData);
+            setFacilityManagers(facilityManagersData);
+            setPropertyManagers(propertyManagersData);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to fetch sites');
+            Alert.alert('Error', error.message || 'Failed to fetch data');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -74,14 +82,17 @@ export default function ManageSitesScreen() {
             setEditingSite(site);
             setName(site.name);
             setAddress(site.address);
-            setCoordinator(site.coordinator);
+            // Pre-select managers using IDs directly
+            setSelectedFacilityManager(site.facility_manager ? site.facility_manager.toString() : '');
+            setSelectedPropertyManager(site.property_manager ? site.property_manager.toString() : '');
             setSiteLatitude(site.latitude);
             setSiteLongitude(site.longitude);
         } else {
             setEditingSite(null);
             setName('');
             setAddress('');
-            setCoordinator('');
+            setSelectedFacilityManager('');
+            setSelectedPropertyManager('');
             setSiteLatitude(undefined);
             setSiteLongitude(undefined);
         }
@@ -93,7 +104,8 @@ export default function ManageSitesScreen() {
         setEditingSite(null);
         setName('');
         setAddress('');
-        setCoordinator('');
+        setSelectedFacilityManager('');
+        setSelectedPropertyManager('');
         setSiteLatitude(undefined);
         setSiteLongitude(undefined);
     };
@@ -104,24 +116,52 @@ export default function ManageSitesScreen() {
             return;
         }
 
+        const fmId = selectedFacilityManager ? parseInt(selectedFacilityManager) : null;
+        const pmId = selectedPropertyManager ? parseInt(selectedPropertyManager) : null;
+
         setSubmitting(true);
         try {
-            const siteData = {
-                name,
-                address,
-                coordinator: coordinator || null, // Send null if empty
-                latitude: siteLatitude,
-                longitude: siteLongitude
-            };
+            let siteId: number;
+
             if (editingSite) {
+                const siteData = {
+                    name,
+                    address,
+                    latitude: siteLatitude,
+                    longitude: siteLongitude,
+                    facility_manager: fmId,
+                    property_manager: pmId
+                };
                 await updateSite(editingSite.id, siteData);
+                siteId = editingSite.id;
                 Alert.alert('Success', 'Site updated successfully');
             } else {
-                await createSite(siteData);
+                // For create, coordinates and both managers are required
+                if (siteLatitude === undefined || siteLongitude === undefined) {
+                    Alert.alert('Validation Error', 'Location (coordinates) is required.');
+                    setSubmitting(false);
+                    return;
+                }
+                if (!fmId || !pmId) {
+                    Alert.alert('Validation Error', 'Both Facility and Property managers are required.');
+                    setSubmitting(false);
+                    return;
+                }
+                const siteData = {
+                    name,
+                    address,
+                    latitude: siteLatitude,
+                    longitude: siteLongitude,
+                    facility_manager: fmId,
+                    property_manager: pmId
+                };
+                const newSite = await createSite(siteData);
+                siteId = newSite.id;
                 Alert.alert('Success', 'Site created successfully');
             }
+
             closeModal();
-            fetchSites(); // Refresh list
+            fetchSites();
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Operation failed');
         } finally {
@@ -233,11 +273,11 @@ export default function ManageSitesScreen() {
                         </View>
 
                         <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Coordinator Role</ThemedText>
+                            <ThemedText style={styles.label}>Facility Manager</ThemedText>
                             <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
                                 <select
-                                    value={coordinator}
-                                    onChange={(e) => setCoordinator(e.target.value)}
+                                    value={selectedFacilityManager}
+                                    onChange={(e) => setSelectedFacilityManager(e.target.value)}
                                     style={{
                                         width: '100%',
                                         height: 50,
@@ -248,16 +288,54 @@ export default function ManageSitesScreen() {
                                     }}
                                 >
                                     <option value="">None</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="property_manager">Property Manager</option>
-                                    <option value="facility_manager">Facility Manager</option>
+                                    {facilityManagers.map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
+                                </select>
+                            </View>
+                        </View>
+
+                        <View style={styles.formGroup}>
+                            <ThemedText style={styles.label}>Property Manager</ThemedText>
+                            <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
+                                <select
+                                    value={selectedPropertyManager}
+                                    onChange={(e) => setSelectedPropertyManager(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        height: 50,
+                                        border: 'none',
+                                        background: 'transparent',
+                                        color: theme.text,
+                                        fontSize: 16,
+                                    }}
+                                >
+                                    <option value="">None</option>
+                                    {propertyManagers.map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
                                 </select>
                             </View>
                         </View>
 
                         <View style={styles.formGroup}>
                             <ThemedText style={styles.label}>Location</ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            {siteLatitude && siteLongitude ? (
+                                <View style={styles.locationRow}>
+                                    <TouchableOpacity onPress={() => setLocationPickerVisible(true)} style={{ flex: 1 }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <IconSymbol name="mappin.and.ellipse" size={16} color={theme.text} />
+                                            <ThemedText style={[styles.addressText, { color: theme.text }]} numberOfLines={1}>
+                                                {siteLatitude.toFixed(4)}, {siteLongitude.toFixed(4)}
+                                            </ThemedText>
+                                        </View>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity onPress={() => setLocationPickerVisible(true)} style={styles.mapButton}>
+                                        <IconSymbol name="map" size={18} color={theme.primary} />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
                                 <TouchableOpacity
                                     style={[
                                         styles.locationButton,
@@ -267,15 +345,10 @@ export default function ManageSitesScreen() {
                                 >
                                     <IconSymbol name="map" size={20} color={theme.primary} />
                                     <ThemedText style={{ color: theme.primary, fontWeight: '600' }}>
-                                        {siteLatitude && siteLongitude ? 'Change Location' : 'Set Location'}
+                                        Set Location
                                     </ThemedText>
                                 </TouchableOpacity>
-                                {siteLatitude && siteLongitude && (
-                                    <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
-                                        {siteLatitude.toFixed(4)}, {siteLongitude.toFixed(4)}
-                                    </ThemedText>
-                                )}
-                            </View>
+                            )}
                         </View>
 
                         <TouchableOpacity
@@ -407,6 +480,25 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 8,
         gap: 8,
+    },
+    locationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        backgroundColor: 'rgba(150, 150, 150, 0.05)',
+    },
+    addressText: {
+        fontSize: 14,
+        textDecorationLine: 'underline',
+        opacity: 0.8,
+    },
+    mapButton: {
+        padding: 8,
+        borderRadius: 8,
+        backgroundColor: 'rgba(150, 150, 150, 0.1)',
     },
     picker: {
         height: 50,

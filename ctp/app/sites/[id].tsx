@@ -8,6 +8,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getSite, getTasks, createTask, updateTask, deleteTask, getUsers } from '@/constants/api';
+import { TaskCard } from '@/components/TaskCard';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -41,7 +42,10 @@ interface Site {
     id: number;
     name: string;
     address: string;
-    coordinator: string;
+    facility_manager: number | null;
+    property_manager: number | null;
+    latitude: number;
+    longitude: number;
 }
 
 interface User {
@@ -195,68 +199,13 @@ export default function SiteTasksScreen() {
         }
     };
 
-    const getStatusStyle = (status: Task['status']) => {
-        switch (status) {
-            case 'DONE': return { color: '#34C759', bg: '#34C759' + '20', icon: 'checkmark.circle.fill' as const };
-            case 'IN_PROGRESS': return { color: '#007AFF', bg: '#007AFF' + '20', icon: 'clock.fill' as const };
-            case 'TODO': return { color: '#FF9500', bg: '#FF9500' + '20', icon: 'circle' as const };
-            default: return { color: theme.icon, bg: theme.neutral + '20', icon: 'circle' as const };
-        }
-    };
-
-    const getPriorityColor = (priority: number) => {
-        switch (priority) {
-            case 1: return '#8E8E93'; // LOWEST
-            case 2: return '#32ADE6'; // LOW
-            case 3: return '#FF9500'; // MEDIUM
-            case 4: return '#FF2D55'; // HIGH
-            case 5: return '#AF52DE'; // HIGHEST
-            default: return theme.text;
-        }
-    };
-
-    const renderTaskItem = ({ item }: { item: Task }) => {
-        const statusStyle = getStatusStyle(item.status);
-
-        return (
-            <TouchableOpacity
-                style={[styles.taskCard, { backgroundColor: theme.background, borderColor: theme.neutral + '30' }]}
-                onPress={() => openModal(item)}
-            >
-                <View style={styles.taskTop}>
-                    <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                        <IconSymbol name={statusStyle.icon} size={14} color={statusStyle.color} />
-                        <ThemedText style={[styles.statusText, { color: statusStyle.color }]}>{item.status.replace('_', ' ')}</ThemedText>
-                    </View>
-                    <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(item.priority) + '20' }]}>
-                        <ThemedText style={[styles.statusText, { color: getPriorityColor(item.priority) }]}>
-                            {REVERSE_PRIORITY_MAP[item.priority] || 'MEDIUM'}
-                        </ThemedText>
-                    </View>
-                </View>
-
-                <ThemedText type="subtitle" style={styles.taskTitle}>{item.title}</ThemedText>
-                {item.description && (
-                    <ThemedText style={styles.taskDesc} numberOfLines={2}>{item.description}</ThemedText>
-                )}
-
-                <View style={styles.taskFooter}>
-                    <View style={styles.assigneeInfo}>
-                        <View style={[styles.avatar, { backgroundColor: theme.secondary + '20' }]}>
-                            <IconSymbol name="person.fill" size={12} color={theme.secondary} />
-                        </View>
-                        <ThemedText style={styles.footerText}>{item.assignee || 'Unassigned'}</ThemedText>
-                    </View>
-                    {item.due_date && (
-                        <View style={styles.assigneeInfo}>
-                            <IconSymbol name="calendar" size={12} color={theme.icon} />
-                            <ThemedText style={styles.footerText}>{new Date(item.due_date).toLocaleDateString()}</ThemedText>
-                        </View>
-                    )}
-                </View>
-            </TouchableOpacity>
-        );
-    };
+    const renderTaskItem = ({ item }: { item: Task }) => (
+        <TaskCard
+            task={item}
+            siteName={site?.name || ''}
+            onEdit={openModal}
+        />
+    );
 
     if (!site && !loading) {
         return (
@@ -280,6 +229,16 @@ export default function SiteTasksScreen() {
             <View style={[styles.header, { backgroundColor: theme.secondary }]}>
                 <ThemedText type="title" style={styles.headerTitle}>{site?.name}</ThemedText>
                 <ThemedText style={styles.headerSubtitle}>{site?.address}</ThemedText>
+                <View style={{ flexDirection: 'row', marginTop: 12, gap: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <IconSymbol name="wrench.fill" size={14} color="rgba(255, 255, 255, 0.7)" />
+                        <ThemedText style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 13 }}>FM ID: {site?.facility_manager ?? 'None'}</ThemedText>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <IconSymbol name="house.fill" size={14} color="rgba(255, 255, 255, 0.7)" />
+                        <ThemedText style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 13 }}>PM ID: {site?.property_manager ?? 'None'}</ThemedText>
+                    </View>
+                </View>
 
                 <View style={styles.searchContainer}>
                     <View style={[styles.searchBar, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
@@ -551,75 +510,6 @@ const styles = StyleSheet.create({
     listContent: {
         padding: 20,
         paddingBottom: 100,
-    },
-    taskCard: {
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    taskTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    statusBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        gap: 4,
-    },
-    statusText: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-    },
-    priorityBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    taskTitle: {
-        fontSize: 18,
-        marginBottom: 8,
-    },
-    taskDesc: {
-        fontSize: 14,
-        opacity: 0.7,
-        marginBottom: 16,
-        lineHeight: 20,
-    },
-    taskFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.05)',
-        paddingTop: 12,
-    },
-    assigneeInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    avatar: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    footerText: {
-        fontSize: 13,
-        opacity: 0.7,
     },
     dateText: {
         fontSize: 12,

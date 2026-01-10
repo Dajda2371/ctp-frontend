@@ -12,9 +12,11 @@ export interface Site {
     id: number;
     name: string;
     address: string;
-    coordinator: string;
-    latitude?: number;
-    longitude?: number;
+    level?: string;
+    facility_manager: number | null;
+    property_manager: number | null;
+    latitude: number;
+    longitude: number;
 }
 
 interface SiteCardProps {
@@ -56,9 +58,14 @@ export function SiteCard({ site, onEdit }: SiteCardProps) {
             <View style={styles.cardContent}>
                 <ThemedText style={styles.cardTitle}>{site.name}</ThemedText>
                 <ThemedText style={styles.cardSubtitle}>{site.address}</ThemedText>
-                {site.coordinator ? (
-                    <ThemedText style={styles.cardDetail}>Coordinator: {site.coordinator}</ThemedText>
-                ) : null}
+                <View style={styles.managerInfo}>
+                    <IconSymbol name="wrench.fill" size={12} color={theme.icon} />
+                    <ThemedText style={styles.cardDetail}>FM ID: {site.facility_manager ?? 'None'}</ThemedText>
+                </View>
+                <View style={styles.managerInfo}>
+                    <IconSymbol name="house.fill" size={12} color={theme.icon} />
+                    <ThemedText style={styles.cardDetail}>PM ID: {site.property_manager ?? 'None'}</ThemedText>
+                </View>
 
                 {/* Location Row */}
                 {site.latitude && site.longitude && (
@@ -118,7 +125,13 @@ const styles = StyleSheet.create({
     },
     cardDetail: {
         fontSize: 12,
-        opacity: 0.5,
+        opacity: 0.6,
+    },
+    managerInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 2,
     },
     locationRow: {
         flexDirection: 'row',

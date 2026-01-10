@@ -140,6 +140,52 @@ export async function getUsers() {
     }
 }
 
+export async function getPossiblePropertyManagers() {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/possible_property_manager`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch possible property managers');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getPossiblePropertyManagers API error:', error);
+        throw error;
+    }
+}
+
+export async function getPossibleFacilityManagers() {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/possible_facility_manager`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch possible facility managers');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getPossibleFacilityManagers API error:', error);
+        throw error;
+    }
+}
+
 export async function createUser(data: { email: string; password: string; name?: string; role?: string }) {
     const token = await getToken();
     try {
@@ -257,7 +303,7 @@ export async function getSite(id: number | string) {
     }
 }
 
-export async function createSite(data: { name: string; address: string; coordinator?: string | null; latitude?: number; longitude?: number }) {
+export async function createSite(data: { name: string; address: string; latitude: number; longitude: number; facility_manager: number; property_manager: number }) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites`, {
@@ -271,7 +317,8 @@ export async function createSite(data: { name: string; address: string; coordina
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to create site');
+            console.error('createSite Error Response:', JSON.stringify(errorData, null, 2));
+            throw new Error(errorData.detail?.[0]?.msg || errorData.message || 'Failed to create site');
         }
 
         return await response.json();
@@ -281,7 +328,7 @@ export async function createSite(data: { name: string; address: string; coordina
     }
 }
 
-export async function updateSite(id: number, data: { name?: string; address?: string; coordinator?: string | null; latitude?: number; longitude?: number }) {
+export async function updateSite(id: number, data: { name?: string; address?: string; facility_manager?: number | null; property_manager?: number | null; latitude?: number; longitude?: number }) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
@@ -324,6 +371,178 @@ export async function deleteSite(id: number) {
         return await response.json();
     } catch (error) {
         console.error('deleteSite API error:', error);
+        throw error;
+    }
+}
+
+export async function updateSiteFacilityManager(siteId: number, managerId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/facility_manager`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ facility_manager: managerId }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('updateSiteFacilityManager Error Response:', JSON.stringify(errorData, null, 2));
+            throw new Error(errorData.detail?.[0]?.msg || errorData.message || 'Failed to update facility manager');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateSiteFacilityManager API error:', error);
+        throw error;
+    }
+}
+
+export async function updateSitePropertyManager(siteId: number, managerId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/property_manager`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ property_manager: managerId }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('updateSitePropertyManager Error Response:', JSON.stringify(errorData, null, 2));
+            throw new Error(errorData.detail?.[0]?.msg || errorData.message || 'Failed to update property manager');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateSitePropertyManager API error:', error);
+        throw error;
+    }
+}
+
+export async function updateSiteName(siteId: number, name: string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/name`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name }),
+        });
+        if (!response.ok) throw new Error('Failed to update name');
+        return await response.json();
+    } catch (error) {
+        console.error('updateSiteName error:', error);
+        throw error;
+    }
+}
+
+export async function updateSiteAddress(siteId: number, address: string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/address`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ address }),
+        });
+        if (!response.ok) throw new Error('Failed to update address');
+        return await response.json();
+    } catch (error) {
+        console.error('updateSiteAddress error:', error);
+        throw error;
+    }
+}
+
+export async function updateSiteLatitude(siteId: number, latitude: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/latitude`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ latitude }),
+        });
+        if (!response.ok) throw new Error('Failed to update latitude');
+        return await response.json();
+    } catch (error) {
+        console.error('updateSiteLatitude error:', error);
+        throw error;
+    }
+}
+
+export async function updateSiteLongitude(siteId: number, longitude: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/longitude`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ longitude }),
+        });
+        if (!response.ok) throw new Error('Failed to update longitude');
+        return await response.json();
+    } catch (error) {
+        console.error('updateSiteLongitude error:', error);
+        throw error;
+    }
+}
+
+export async function getSiteFacilityManager(siteId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/facility_manager`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch facility manager');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getSiteFacilityManager API error:', error);
+        throw error;
+    }
+}
+
+export async function getSitePropertyManager(siteId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/property_manager`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch property manager');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getSitePropertyManager API error:', error);
         throw error;
     }
 }
