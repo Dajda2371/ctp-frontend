@@ -140,6 +140,28 @@ export async function getUsers() {
     }
 }
 
+export async function getUserById(id: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return null; // Return null if user not found
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getUserById API error:', error);
+        return null;
+    }
+}
+
 export async function getPossiblePropertyManagers() {
     const token = await getToken();
     try {

@@ -8,7 +8,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getSites } from '@/constants/api'; // Import API call
-import { Site } from '@/constants/mockData'; // Ensure Site type is available (or move to types.ts)
+import { Site } from '@/components/SiteCard'; // Use Site type with manager names
 
 export default function SitesScreen() {
     const router = useRouter();
@@ -61,11 +61,11 @@ export default function SitesScreen() {
                 <View style={styles.managerRow}>
                     <View style={styles.managerInfo}>
                         <IconSymbol name="wrench.fill" size={12} color={theme.icon} />
-                        <ThemedText style={styles.footerText}>FM: {item.facility_manager || 'Unassigned'}</ThemedText>
+                        <ThemedText style={styles.footerText}>FM: {item.facility_manager_name || 'Unassigned'}</ThemedText>
                     </View>
                     <View style={[styles.managerInfo, { marginLeft: 16 }]}>
                         <IconSymbol name="house.fill" size={12} color={theme.icon} />
-                        <ThemedText style={styles.footerText}>PM: {item.property_manager || 'Unassigned'}</ThemedText>
+                        <ThemedText style={styles.footerText}>PM: {item.property_manager_name || 'Unassigned'}</ThemedText>
                     </View>
                 </View>
             </View>
@@ -87,7 +87,7 @@ export default function SitesScreen() {
                 <FlatList
                     data={sites}
                     renderItem={renderSiteItem}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
