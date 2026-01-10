@@ -6,7 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getTasks, getSites, createTask, updateTask, deleteTask } from '@/constants/api';
+import { getTasks, getSites, createTask, updateTask, deleteTask, getUsers } from '@/constants/api';
 
 interface Task {
     id: number;
@@ -25,12 +25,19 @@ interface Site {
     address: string;
 }
 
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
 export default function TasksScreen() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [sites, setSites] = useState<Site[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -70,9 +77,19 @@ export default function TasksScreen() {
         }
     };
 
+    const fetchUsers = async () => {
+        try {
+            const data = await getUsers();
+            setUsers(data);
+        } catch (error: any) {
+            console.error('Failed to fetch users:', error);
+        }
+    };
+
     useEffect(() => {
         fetchTasks();
         fetchSites();
+        fetchUsers();
     }, []);
 
     const onRefresh = useCallback(() => {
@@ -379,13 +396,25 @@ export default function TasksScreen() {
 
                             <View style={styles.formGroup}>
                                 <ThemedText style={styles.label}>Assignee</ThemedText>
-                                <TextInput
-                                    style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
-                                    value={assignee}
-                                    onChangeText={setAssignee}
-                                    placeholder="Assignee Name"
-                                    placeholderTextColor={theme.icon + '80'}
-                                />
+                                <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
+                                    <select
+                                        value={assignee}
+                                        onChange={(e) => setAssignee(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            height: 50,
+                                            border: 'none',
+                                            background: 'transparent',
+                                            color: theme.text,
+                                            fontSize: 16,
+                                        }}
+                                    >
+                                        <option value="">Unassigned</option>
+                                        {users.map(u => (
+                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </View>
                             </View>
                         </ScrollView>
 
