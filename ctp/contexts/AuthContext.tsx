@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getToken, getMe, saveToken } from '@/constants/api';
+import { getToken, getMe, saveToken, logout } from '@/constants/api';
 import { UserRole } from '@/constants/roles';
 import { useRouter, useSegments } from 'expo-router';
 
@@ -77,6 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signOut = async () => {
         setIsLoading(true);
+        try {
+            await logout();
+        } catch (e) {
+            console.error('Logout failed:', e);
+        }
         await saveToken(''); // Clear token
         setUser(null);
         setIsLoading(false);
