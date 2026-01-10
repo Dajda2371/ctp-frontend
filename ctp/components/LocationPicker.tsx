@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Modal, TouchableOpacity, Text, Dimensions } from 'react-native';
-import MapLibreGL from '@maplibre/maplibre-react-native';
+import { StyleSheet, View, Modal, TouchableOpacity, Text, Dimensions, Platform, Linking, TextInput } from 'react-native';
+// Remove native import that crashes Expo Go
+// import MapLibreGL from '@maplibre/maplibre-react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-// Set access token to null if using self-hosted or open tiles
-MapLibreGL.setAccessToken(null);
 
 interface LocationPickerProps {
     visible: boolean;
@@ -39,67 +37,47 @@ export function LocationPicker({
     const startLat = initialLatitude || siteLatitude || defaultLat;
     const startLong = initialLongitude || siteLongitude || defaultLong;
 
-    const [coordinates, setCoordinates] = useState<[number, number]>([startLong, startLat]);
-    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [lat, setLat] = useState(startLat.toString());
+    const [long, setLong] = useState(startLong.toString());
 
     useEffect(() => {
-        setCoordinates([
-            initialLongitude || siteLongitude || defaultLong,
-            initialLatitude || siteLatitude || defaultLat
-        ]);
+        setLat((initialLatitude || siteLatitude || defaultLat).toString());
+        setLong((initialLongitude || siteLongitude || defaultLong).toString());
     }, [visible, initialLatitude, initialLongitude, siteLatitude, siteLongitude]);
 
-    const handleMapPress = (feature: any) => {
-        if (readOnly) return; // Don't allow changes in read-only mode
-        const coords = feature.geometry.coordinates;
-        setCoordinates(coords);
-    };
-
     const handleConfirm = () => {
-        onLocationSelect({
-            longitude: coordinates[0],
-            latitude: coordinates[1],
-        });
-        onClose();
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(long);
+        if (!isNaN(latitude) && !isNaN(longitude)) {
+            onLocationSelect({ latitude, longitude });
+            onClose();
+        }
     };
 
-    const osmStyleJSON = JSON.stringify({
-        "version": 8,
-        "sources": {
-            "osm": {
-                "type": "raster",
-                "tiles": ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"],
-                "tileSize": 256,
-                "attribution": "&copy; OpenStreetMap Contributors",
-                "maxzoom": 19
-            }
-        },
-        "layers": [
-            {
-                "id": "osm",
-                "type": "raster",
-                "source": "osm"
-            }
-        ]
-    });
+    const openInMaps = () => {
+        const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
+        const latLng = `${lat},${long}`;
+        const label = 'Location';
+        const url = Platform.select({
+            ios: `${scheme}${label}@${latLng}`,
+            android: `${scheme}${latLng}(${label})`
+        });
+        if (url) {
+            Linking.openURL(url);
+        } else {
+            window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${long}`, '_blank');
+        }
+    };
 
     return (
         <Modal
             visible={visible}
             animationType="slide"
-            transparent={!isFullScreen}
+            transparent={true}
             onRequestClose={onClose}
         >
-            <View style={[
-                styles.container,
-                isFullScreen ? styles.fullScreenContainer : styles.modalContainer,
-                { backgroundColor: isFullScreen ? theme.background : 'rgba(0,0,0,0.5)' }
-            ]}>
-                <View style={[
-                    styles.content,
-                    isFullScreen ? styles.fullScreenContent : styles.modalContent,
-                    { backgroundColor: theme.background }
-                ]}>
+            <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+                <View style={[styles.content, styles.modalContent, { backgroundColor: theme.background }]}>
                     <View style={styles.header}>
                         <TouchableOpacity onPress={onClose} style={styles.button}>
                             <IconSymbol name="xmark" size={24} color={theme.text} />
@@ -107,34 +85,46 @@ export function LocationPicker({
                         <Text style={[styles.title, { color: theme.text }]}>
                             {readOnly ? 'View Location' : 'Set Location'}
                         </Text>
-                        <TouchableOpacity onPress={() => setIsFullScreen(!isFullScreen)} style={styles.button}>
-                            <IconSymbol
-                                name={isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"}
-                                size={20}
-                                color={theme.text}
-                            />
-                        </TouchableOpacity>
+                        <View style={{ width: 40 }} />
                     </View>
 
-                    <View style={styles.mapContainer}>
-                        <MapLibreGL.MapView
-                            style={styles.map}
-                            styleJSON={osmStyleJSON}
-                            onPress={handleMapPress}
-                        >
-                            <MapLibreGL.Camera
-                                centerCoordinate={coordinates}
-                                zoomLevel={14}
-                                animationMode="flyTo"
-                                animationDuration={1000}
+                    <View style={styles.body}>
+                        <View style={styles.infoBox}>
+                            <IconSymbol name="info.circle" size={20} color={theme.icon} />
+                            <Text style={[styles.infoText, { color: theme.icon }]}>
+                                In-app maps are not available in Expo Go. Please use coordinates or open in external maps.
+                            </Text>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: theme.text }]}>Latitude</Text>
+                            <TextInput
+                                style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40', backgroundColor: readOnly ? theme.neutral + '10' : 'transparent' }]}
+                                value={lat}
+                                onChangeText={setLat}
+                                keyboardType="numeric"
+                                editable={!readOnly}
                             />
-                            <MapLibreGL.PointAnnotation
-                                id="marker"
-                                coordinate={coordinates}
-                            >
-                                <View style={styles.marker} />
-                            </MapLibreGL.PointAnnotation>
-                        </MapLibreGL.MapView>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: theme.text }]}>Longitude</Text>
+                            <TextInput
+                                style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40', backgroundColor: readOnly ? theme.neutral + '10' : 'transparent' }]}
+                                value={long}
+                                onChangeText={setLong}
+                                keyboardType="numeric"
+                                editable={!readOnly}
+                            />
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.mapButton, { borderColor: theme.primary }]}
+                            onPress={openInMaps}
+                        >
+                            <IconSymbol name="map" size={20} color={theme.primary} />
+                            <Text style={[styles.mapButtonText, { color: theme.primary }]}>View in Maps App</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {!readOnly && (
@@ -159,17 +149,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    modalContainer: {
-        justifyContent: 'center',
-        padding: 20,
-    },
-    fullScreenContainer: {
-        padding: 0,
-    },
     content: {
         borderRadius: 12,
         overflow: 'hidden',
-        width: '100%',
+        width: '90%',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
@@ -177,12 +160,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     modalContent: {
-        height: '70%',
         maxHeight: 600,
-    },
-    fullScreenContent: {
-        flex: 1,
-        borderRadius: 0,
     },
     header: {
         flexDirection: 'row',
@@ -199,12 +177,47 @@ const styles = StyleSheet.create({
     button: {
         padding: 8,
     },
-    mapContainer: {
-        flex: 1,
-        overflow: 'hidden', // Ensure map stays within bounds
+    body: {
+        padding: 20,
     },
-    map: {
+    infoBox: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255, 165, 0, 0.1)',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 20,
+        gap: 10,
+        alignItems: 'center'
+    },
+    infoText: {
+        fontSize: 13,
         flex: 1,
+    },
+    inputGroup: {
+        marginBottom: 16,
+    },
+    label: {
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    input: {
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+    },
+    mapButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 12,
+        borderWidth: 1,
+        borderRadius: 8,
+        gap: 8,
+        marginTop: 8,
+    },
+    mapButtonText: {
+        fontWeight: '600',
     },
     footer: {
         padding: 16,
@@ -223,13 +236,5 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    marker: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        backgroundColor: 'red',
-        borderColor: 'white',
-        borderWidth: 2,
     },
 });

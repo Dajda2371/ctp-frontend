@@ -266,22 +266,40 @@ export default function UsersScreen() {
                             <View style={styles.formGroup}>
                                 <ThemedText style={styles.label}>Role</ThemedText>
                                 <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                    <select
-                                        value={role}
-                                        onChange={(e) => setRole(e.target.value as UserRole)}
-                                        style={{
-                                            width: '100%',
-                                            height: 50,
-                                            border: 'none',
-                                            background: 'transparent',
-                                            color: theme.text,
-                                            fontSize: 16,
-                                        }}
-                                    >
-                                        {manageableRoles.map(r => (
-                                            <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                                        ))}
-                                    </select>
+                                    {Platform.OS === 'web' ? (
+                                        <select
+                                            value={role}
+                                            onChange={(e) => setRole(e.target.value as UserRole)}
+                                            style={{
+                                                width: '100%',
+                                                height: 50,
+                                                border: 'none',
+                                                background: 'transparent',
+                                                color: theme.text,
+                                                fontSize: 16,
+                                            }}
+                                        >
+                                            {manageableRoles.map(r => (
+                                                <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                            onPress={() => {
+                                                const options = manageableRoles.map(r => ({
+                                                    text: ROLE_LABELS[r],
+                                                    onPress: () => setRole(r)
+                                                }));
+                                                options.push({ text: 'Cancel', style: 'cancel' as const } as any);
+                                                Alert.alert('Select Role', '', options as any);
+                                            }}
+                                        >
+                                            <ThemedText style={{ color: theme.text }}>
+                                                {ROLE_LABELS[role]}
+                                            </ThemedText>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             </View>
                         </ScrollView>

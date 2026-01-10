@@ -275,46 +275,88 @@ export default function ManageSitesScreen() {
                         <View style={styles.formGroup}>
                             <ThemedText style={styles.label}>Facility Manager</ThemedText>
                             <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                <select
-                                    value={selectedFacilityManager}
-                                    onChange={(e) => setSelectedFacilityManager(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        height: 50,
-                                        border: 'none',
-                                        background: 'transparent',
-                                        color: theme.text,
-                                        fontSize: 16,
-                                    }}
-                                >
-                                    <option value="">None</option>
-                                    {facilityManagers.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </select>
+                                {Platform.OS === 'web' ? (
+                                    <select
+                                        value={selectedFacilityManager}
+                                        onChange={(e) => setSelectedFacilityManager(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            height: 50,
+                                            border: 'none',
+                                            background: 'transparent',
+                                            color: theme.text,
+                                            fontSize: 16,
+                                        }}
+                                    >
+                                        <option value="">None</option>
+                                        {facilityManagers.map(u => (
+                                            <option key={u.id} value={u.id.toString()}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <TouchableOpacity
+                                        style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                        onPress={() => {
+                                            const options = [
+                                                { text: 'None', onPress: () => setSelectedFacilityManager('') },
+                                                ...facilityManagers.map(u => ({
+                                                    text: u.name,
+                                                    onPress: () => setSelectedFacilityManager(u.id.toString())
+                                                })),
+                                                { text: 'Cancel', style: 'cancel' as const }
+                                            ];
+                                            Alert.alert('Select Facility Manager', '', options);
+                                        }}
+                                    >
+                                        <ThemedText style={{ color: selectedFacilityManager ? theme.text : (theme.icon + '80') }}>
+                                            {facilityManagers.find(u => u.id.toString() === selectedFacilityManager)?.name || 'Select Manager'}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
 
                         <View style={styles.formGroup}>
                             <ThemedText style={styles.label}>Property Manager</ThemedText>
                             <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                <select
-                                    value={selectedPropertyManager}
-                                    onChange={(e) => setSelectedPropertyManager(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        height: 50,
-                                        border: 'none',
-                                        background: 'transparent',
-                                        color: theme.text,
-                                        fontSize: 16,
-                                    }}
-                                >
-                                    <option value="">None</option>
-                                    {propertyManagers.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </select>
+                                {Platform.OS === 'web' ? (
+                                    <select
+                                        value={selectedPropertyManager}
+                                        onChange={(e) => setSelectedPropertyManager(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            height: 50,
+                                            border: 'none',
+                                            background: 'transparent',
+                                            color: theme.text,
+                                            fontSize: 16,
+                                        }}
+                                    >
+                                        <option value="">None</option>
+                                        {propertyManagers.map(u => (
+                                            <option key={u.id} value={u.id.toString()}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <TouchableOpacity
+                                        style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                        onPress={() => {
+                                            const options = [
+                                                { text: 'None', onPress: () => setSelectedPropertyManager('') },
+                                                ...propertyManagers.map(u => ({
+                                                    text: u.name,
+                                                    onPress: () => setSelectedPropertyManager(u.id.toString())
+                                                })),
+                                                { text: 'Cancel', style: 'cancel' as const }
+                                            ];
+                                            Alert.alert('Select Property Manager', '', options);
+                                        }}
+                                    >
+                                        <ThemedText style={{ color: selectedPropertyManager ? theme.text : (theme.icon + '80') }}>
+                                            {propertyManagers.find(u => u.id.toString() === selectedPropertyManager)?.name || 'Select Manager'}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
 
