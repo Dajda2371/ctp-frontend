@@ -35,6 +35,7 @@ interface Task {
     status: string;
     priority: number;
     assignee: string | null;
+    due_date: string | null;
     photos: string[];
     latitude?: number;
     longitude?: number;
@@ -72,6 +73,7 @@ export default function MyTasksScreen() {
     const [taskLongitude, setTaskLongitude] = useState<number | undefined>(undefined);
     const [locationPickerVisible, setLocationPickerVisible] = useState(false);
     const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+    const [dueDate, setDueDate] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     // Delete Modal State
@@ -119,6 +121,7 @@ export default function MyTasksScreen() {
             setStatus(task.status);
             setPriority(REVERSE_PRIORITY_MAP[task.priority] || 'MEDIUM');
             setAssignee(task.assignee || '');
+            setDueDate(task.due_date ? task.due_date.split('T')[0] : '');
             setTaskLatitude(task.latitude);
             setTaskLongitude(task.longitude);
             if (task.site_id) {
@@ -132,6 +135,7 @@ export default function MyTasksScreen() {
             setStatus('TODO');
             setPriority('MEDIUM');
             setAssignee('');
+            setDueDate('');
             setTaskLatitude(undefined);
             setTaskLongitude(undefined);
             setSelectedSite(null);
@@ -148,6 +152,7 @@ export default function MyTasksScreen() {
         setStatus('TODO');
         setPriority('MEDIUM');
         setAssignee('');
+        setDueDate('');
         setTaskLatitude(undefined);
         setTaskLongitude(undefined);
         setSelectedSite(null);
@@ -183,6 +188,7 @@ export default function MyTasksScreen() {
                 status,
                 priority: PRIORITY_MAP[priority] || 3,
                 assignee: user?.name || undefined,
+                due_date: dueDate ? new Date(dueDate).toISOString() : null,
                 latitude: taskLatitude,
                 longitude: taskLongitude,
             };
@@ -404,6 +410,28 @@ export default function MyTasksScreen() {
                                 </View>
                             </View>
 
+
+                            <View style={styles.formGroup}>
+                                <ThemedText style={styles.label}>Due Date</ThemedText>
+                                <View style={[styles.picker, { borderColor: theme.neutral + '40', padding: 0 }]}>
+                                    <input
+                                        type="date"
+                                        value={dueDate}
+                                        onChange={(e) => setDueDate(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            border: 'none',
+                                            background: 'transparent',
+                                            color: theme.text,
+                                            fontSize: 16,
+                                            padding: '0 16px',
+                                            fontFamily: 'inherit'
+                                        }}
+                                    />
+                                </View>
+                            </View>
+
                             <View style={styles.formGroup}>
                                 <ThemedText style={styles.label}>Assignee</ThemedText>
                                 <ThemedText style={{ opacity: 0.6 }}>Assigned to you ({user?.name})</ThemedText>
@@ -505,7 +533,7 @@ export default function MyTasksScreen() {
                     </ThemedView>
                 </View>
             </Modal>
-        </ThemedView>
+        </ThemedView >
     );
 }
 

@@ -411,6 +411,7 @@ export async function createTask(data: {
     status?: string;
     priority?: number;
     assignee?: string;
+    due_date?: string | null;
     photos?: string[];
     latitude?: number;
     longitude?: number;
@@ -446,6 +447,7 @@ export async function updateTask(id: number, data: {
     status?: string;
     priority?: number;
     assignee?: string;
+    due_date?: string | null;
     photos?: string[];
     latitude?: number;
     longitude?: number;

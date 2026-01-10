@@ -95,12 +95,7 @@ export default function SitesScreen() {
                 />
             )}
 
-            <TouchableOpacity
-                style={[styles.fab, { backgroundColor: theme.primary }]}
-                onPress={() => {/* TODO: Add Site */ }}
-            >
-                <IconSymbol name="plus" size={30} color="#fff" />
-            </TouchableOpacity>
+
         </ThemedView>
     );
 }

@@ -41,6 +41,7 @@ const MAPPING = {
   'map': 'map',
   'arrow.up.left.and.arrow.down.right': 'open-in-full',
   'arrow.down.right.and.arrow.up.left': 'close-fullscreen',
+  'calendar': 'calendar-today',
 } as unknown as IconMapping;
 
 /**

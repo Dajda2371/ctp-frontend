@@ -18,6 +18,7 @@ export interface Task {
     status: string;
     priority: number;
     assignee: string | null;
+    due_date: string | null;
     photos: string[];
     latitude?: number;
     longitude?: number;
@@ -146,6 +147,15 @@ export function TaskCard({ task, siteName, onEdit }: TaskCardProps) {
                         <IconSymbol name="person.fill" size={14} color={theme.text} style={{ opacity: 0.6 }} />
                         <ThemedText style={styles.footerText}>
                             {task.assignee}
+                        </ThemedText>
+                    </View>
+                )}
+
+                {task.due_date && (
+                    <View style={styles.footerItem}>
+                        <IconSymbol name="calendar" size={14} color={theme.text} style={{ opacity: 0.6 }} />
+                        <ThemedText style={styles.footerText}>
+                            {new Date(task.due_date).toLocaleDateString()}
                         </ThemedText>
                     </View>
                 )}
