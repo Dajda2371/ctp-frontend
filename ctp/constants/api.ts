@@ -22,6 +22,23 @@ export async function login(email: string, password: string) {
     }
 }
 
+export async function logout() {
+    const token = await getToken();
+    try {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        // We don't check for response.ok because we want to clear client session regardless
+    } catch (error) {
+        console.error('Logout API error:', error);
+        // Continue to clear local session
+    }
+}
+
 
 export async function getMe() {
     const token = await getToken();
