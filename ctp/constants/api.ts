@@ -257,7 +257,7 @@ export async function getSite(id: number | string) {
     }
 }
 
-export async function createSite(data: { name: string; address: string; coordinator: string }) {
+export async function createSite(data: { name: string; address: string; coordinator?: string | null; latitude?: number; longitude?: number }) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites`, {
@@ -281,7 +281,7 @@ export async function createSite(data: { name: string; address: string; coordina
     }
 }
 
-export async function updateSite(id: number, data: { name?: string; address?: string; coordinator?: string }) {
+export async function updateSite(id: number, data: { name?: string; address?: string; coordinator?: string | null; latitude?: number; longitude?: number }) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
@@ -412,6 +412,8 @@ export async function createTask(data: {
     priority?: number;
     assignee?: string;
     photos?: string[];
+    latitude?: number;
+    longitude?: number;
 }) {
     const token = await getToken();
     try {
@@ -445,6 +447,8 @@ export async function updateTask(id: number, data: {
     priority?: number;
     assignee?: string;
     photos?: string[];
+    latitude?: number;
+    longitude?: number;
 }) {
     const token = await getToken();
     try {

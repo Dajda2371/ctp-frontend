@@ -35,6 +35,12 @@ const MAPPING = {
   'person.2.fill': 'people',
   'line.3.horizontal': 'menu',
   'door.right.hand.open': 'logout',
+  'mappin': 'location-on',
+  'mappin.and.ellipse': 'place',
+  'location.fill': 'my-location',
+  'map': 'map',
+  'arrow.up.left.and.arrow.down.right': 'open-in-full',
+  'arrow.down.right.and.arrow.up.left': 'close-fullscreen',
 } as unknown as IconMapping;
 
 /**

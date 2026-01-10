@@ -6,7 +6,9 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getTasks, getSites, createTask, updateTask, deleteTask, getUsers } from '@/constants/api';
+import { getTasks, getSites, getSite, createTask, updateTask, deleteTask, getUsers } from '@/constants/api';
+import { LocationPicker } from '@/components/LocationPicker';
+import { TaskCard } from '@/components/TaskCard';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -33,12 +35,16 @@ interface Task {
     priority: number;
     assignee: string | null;
     photos: string[];
+    latitude?: number;
+    longitude?: number;
 }
 
 interface Site {
     id: number;
     name: string;
     address: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 interface User {
@@ -66,6 +72,10 @@ export default function TasksScreen() {
     const [status, setStatus] = useState('TODO');
     const [priority, setPriority] = useState('MEDIUM');
     const [assignee, setAssignee] = useState('');
+    const [taskLatitude, setTaskLatitude] = useState<number | undefined>(undefined);
+    const [taskLongitude, setTaskLongitude] = useState<number | undefined>(undefined);
+    const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+    const [selectedSite, setSelectedSite] = useState<Site | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     // Delete Modal State
@@ -122,6 +132,12 @@ export default function TasksScreen() {
             setStatus(task.status);
             setPriority(REVERSE_PRIORITY_MAP[task.priority] || 'MEDIUM');
             setAssignee(task.assignee || '');
+            setTaskLatitude(task.latitude);
+            setTaskLongitude(task.longitude);
+            // Fetch site details to have fallback coordinates if needed
+            if (task.site_id) {
+                getSite(task.site_id).then(setSelectedSite).catch(console.error);
+            }
         } else {
             setEditingTask(null);
             setSiteId('');
@@ -130,6 +146,9 @@ export default function TasksScreen() {
             setStatus('TODO');
             setPriority('MEDIUM');
             setAssignee('');
+            setTaskLatitude(undefined);
+            setTaskLongitude(undefined);
+            setSelectedSite(null);
         }
         setModalVisible(true);
     };
@@ -143,6 +162,24 @@ export default function TasksScreen() {
         setStatus('TODO');
         setPriority('MEDIUM');
         setAssignee('');
+        setTaskLatitude(undefined);
+        setTaskLongitude(undefined);
+        setSelectedSite(null);
+    };
+
+    const handleSiteChange = async (newSiteId: string) => {
+        setSiteId(newSiteId);
+        if (newSiteId) {
+            try {
+                const siteData = await getSite(newSiteId);
+                setSelectedSite(siteData);
+            } catch (error) {
+                console.error("Failed to fetch site details", error);
+                setSelectedSite(null);
+            }
+        } else {
+            setSelectedSite(null);
+        }
     };
 
     const handleSubmit = async () => {
@@ -160,6 +197,8 @@ export default function TasksScreen() {
                 status,
                 priority: PRIORITY_MAP[priority] || 2,
                 assignee: assignee || undefined,
+                latitude: taskLatitude,
+                longitude: taskLongitude,
             };
 
             if (editingTask) {
@@ -223,46 +262,11 @@ export default function TasksScreen() {
     };
 
     const renderTaskItem = ({ item }: { item: Task }) => (
-        <ThemedView style={[styles.card, { borderColor: theme.neutral + '20' }]}>
-            <View style={styles.cardHeader}>
-                <View style={styles.taskBadges}>
-                    <View style={[styles.badge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-                        <ThemedText style={[styles.badgeText, { color: getStatusColor(item.status) }]}>
-                            {item.status.replace('_', ' ')}
-                        </ThemedText>
-                    </View>
-                    <View style={[styles.badge, { backgroundColor: getPriorityColor(item.priority) + '20' }]}>
-                        <ThemedText style={[styles.badgeText, { color: getPriorityColor(item.priority) }]}>
-                            {REVERSE_PRIORITY_MAP[item.priority] || 'MEDIUM'}
-                        </ThemedText>
-                    </View>
-                </View>
-                <TouchableOpacity onPress={() => openModal(item)} style={styles.actionButton}>
-                    <IconSymbol name="pencil" size={20} color={theme.primary} />
-                </TouchableOpacity>
-            </View>
-
-            <ThemedText style={styles.cardTitle}>{item.title}</ThemedText>
-
-            {item.description && (
-                <ThemedText style={styles.cardDescription} numberOfLines={2}>
-                    {item.description}
-                </ThemedText>
-            )}
-
-            <View style={styles.cardFooter}>
-                <View style={styles.footerItem}>
-                    <IconSymbol name="building.2.fill" size={14} color={theme.icon} />
-                    <ThemedText style={styles.footerText}>{getSiteName(item.site_id)}</ThemedText>
-                </View>
-                {item.assignee && (
-                    <View style={styles.footerItem}>
-                        <IconSymbol name="person.fill" size={14} color={theme.icon} />
-                        <ThemedText style={styles.footerText}>{item.assignee}</ThemedText>
-                    </View>
-                )}
-            </View>
-        </ThemedView>
+        <TaskCard
+            task={item}
+            siteName={getSiteName(item.site_id)}
+            onEdit={openModal}
+        />
     );
 
     return (
@@ -321,7 +325,7 @@ export default function TasksScreen() {
                                     {sites.length > 0 ? (
                                         <select
                                             value={siteId}
-                                            onChange={(e) => setSiteId(e.target.value)}
+                                            onChange={(e) => handleSiteChange(e.target.value)}
                                             style={{
                                                 width: '100%',
                                                 height: 50,
@@ -436,6 +440,38 @@ export default function TasksScreen() {
                                     </select>
                                 </View>
                             </View>
+
+                            <View style={styles.formGroup}>
+                                <ThemedText style={styles.label}>Location</ThemedText>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.locationButton,
+                                            {
+                                                borderColor: theme.primary,
+                                                opacity: !siteId ? 0.5 : 1
+                                            }
+                                        ]}
+                                        onPress={() => setLocationPickerVisible(true)}
+                                        disabled={!siteId}
+                                    >
+                                        <IconSymbol name="map" size={20} color={theme.primary} />
+                                        <ThemedText style={{ color: theme.primary, fontWeight: '600' }}>
+                                            {taskLatitude && taskLongitude ? 'Change Location' : 'Set Location'}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                    {taskLatitude && taskLongitude && (
+                                        <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                                            {taskLatitude.toFixed(4)}, {taskLongitude.toFixed(4)}
+                                        </ThemedText>
+                                    )}
+                                </View>
+                                {!siteId && (
+                                    <ThemedText style={{ fontSize: 12, color: theme.danger, marginTop: 4 }}>
+                                        Select a site first to set location.
+                                    </ThemedText>
+                                )}
+                            </View>
                         </ScrollView>
 
                         <TouchableOpacity
@@ -457,6 +493,19 @@ export default function TasksScreen() {
                     </ThemedView>
                 </KeyboardAvoidingView>
             </Modal>
+
+            <LocationPicker
+                visible={locationPickerVisible}
+                onClose={() => setLocationPickerVisible(false)}
+                onLocationSelect={(loc) => {
+                    setTaskLatitude(loc.latitude);
+                    setTaskLongitude(loc.longitude);
+                }}
+                initialLatitude={taskLatitude}
+                initialLongitude={taskLongitude}
+                siteLatitude={selectedSite?.latitude}
+                siteLongitude={selectedSite?.longitude}
+            />
 
             {/* Delete Confirmation Modal */}
             <Modal
@@ -515,60 +564,7 @@ const styles = StyleSheet.create({
         padding: 16,
         paddingBottom: 100,
     },
-    card: {
-        padding: 16,
-        marginBottom: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        backgroundColor: 'rgba(150, 150, 150, 0.05)',
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 8,
-    },
-    taskBadges: {
-        flexDirection: 'row',
-        gap: 8,
-        flex: 1,
-    },
-    badge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    badgeText: {
-        fontSize: 11,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-    },
-    actionButton: {
-        padding: 8,
-    },
-    cardTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 4,
-    },
-    cardDescription: {
-        fontSize: 14,
-        opacity: 0.7,
-        marginBottom: 12,
-    },
-    cardFooter: {
-        flexDirection: 'row',
-        gap: 16,
-    },
-    footerItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    footerText: {
-        fontSize: 12,
-        opacity: 0.6,
-    },
+    // Card styles removed as they are now in TaskCard component
     fab: {
         position: 'absolute',
         right: 24,
@@ -639,6 +635,14 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: 'center',
         paddingHorizontal: 16,
+    },
+    locationButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        borderWidth: 1,
+        borderRadius: 8,
+        gap: 8,
     },
     submitButton: {
         height: 50,

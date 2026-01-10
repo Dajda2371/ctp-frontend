@@ -10,12 +10,18 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getSites, createSite, updateSite, deleteSite } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { canManageSites } from '@/constants/roles';
+import { LocationPicker } from '@/components/LocationPicker';
+import { getAddressFromCoordinates } from '@/utils/geocoding';
+import { Linking } from 'react-native';
+import { SiteCard } from '@/components/SiteCard';
 
 interface Site {
     id: number;
     name: string;
     address: string;
     coordinator: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export default function ManageSitesScreen() {
@@ -33,6 +39,9 @@ export default function ManageSitesScreen() {
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
     const [coordinator, setCoordinator] = useState('');
+    const [siteLatitude, setSiteLatitude] = useState<number | undefined>(undefined);
+    const [siteLongitude, setSiteLongitude] = useState<number | undefined>(undefined);
+    const [locationPickerVisible, setLocationPickerVisible] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     // Delete Modal State
@@ -66,11 +75,15 @@ export default function ManageSitesScreen() {
             setName(site.name);
             setAddress(site.address);
             setCoordinator(site.coordinator);
+            setSiteLatitude(site.latitude);
+            setSiteLongitude(site.longitude);
         } else {
             setEditingSite(null);
             setName('');
             setAddress('');
             setCoordinator('');
+            setSiteLatitude(undefined);
+            setSiteLongitude(undefined);
         }
         setModalVisible(true);
     };
@@ -81,6 +94,8 @@ export default function ManageSitesScreen() {
         setName('');
         setAddress('');
         setCoordinator('');
+        setSiteLatitude(undefined);
+        setSiteLongitude(undefined);
     };
 
     const handleSubmit = async () => {
@@ -91,11 +106,18 @@ export default function ManageSitesScreen() {
 
         setSubmitting(true);
         try {
+            const siteData = {
+                name,
+                address,
+                coordinator: coordinator || null, // Send null if empty
+                latitude: siteLatitude,
+                longitude: siteLongitude
+            };
             if (editingSite) {
-                await updateSite(editingSite.id, { name, address, coordinator });
+                await updateSite(editingSite.id, siteData);
                 Alert.alert('Success', 'Site updated successfully');
             } else {
-                await createSite({ name, address, coordinator });
+                await createSite(siteData);
                 Alert.alert('Success', 'Site created successfully');
             }
             closeModal();
@@ -135,21 +157,7 @@ export default function ManageSitesScreen() {
     }
 
     const renderSiteItem = ({ item }: { item: Site }) => (
-        <ThemedView style={[styles.card, { borderColor: theme.neutral + '20' }]}>
-            <View style={styles.cardContent}>
-                <ThemedText style={styles.cardTitle}>{item.name}</ThemedText>
-                <ThemedText style={styles.cardSubtitle}>{item.address}</ThemedText>
-                {item.coordinator ? (
-                    <ThemedText style={styles.cardDetail}>Coordinator: {item.coordinator}</ThemedText>
-                ) : null}
-            </View>
-            <View style={styles.cardActions}>
-                <TouchableOpacity onPress={() => openModal(item)} style={styles.actionButton}>
-                    <IconSymbol name="pencil" size={20} color={theme.primary} />
-                </TouchableOpacity>
-
-            </View>
-        </ThemedView>
+        <SiteCard site={item} onEdit={openModal} />
     );
 
     return (
@@ -225,14 +233,49 @@ export default function ManageSitesScreen() {
                         </View>
 
                         <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Coordinator</ThemedText>
-                            <TextInput
-                                style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
-                                value={coordinator}
-                                onChangeText={setCoordinator}
-                                placeholder="Coordinator Name"
-                                placeholderTextColor={theme.icon + '80'}
-                            />
+                            <ThemedText style={styles.label}>Coordinator Role</ThemedText>
+                            <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
+                                <select
+                                    value={coordinator}
+                                    onChange={(e) => setCoordinator(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        height: 50,
+                                        border: 'none',
+                                        background: 'transparent',
+                                        color: theme.text,
+                                        fontSize: 16,
+                                    }}
+                                >
+                                    <option value="">None</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="property_manager">Property Manager</option>
+                                    <option value="facility_manager">Facility Manager</option>
+                                </select>
+                            </View>
+                        </View>
+
+                        <View style={styles.formGroup}>
+                            <ThemedText style={styles.label}>Location</ThemedText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.locationButton,
+                                        { borderColor: theme.primary }
+                                    ]}
+                                    onPress={() => setLocationPickerVisible(true)}
+                                >
+                                    <IconSymbol name="map" size={20} color={theme.primary} />
+                                    <ThemedText style={{ color: theme.primary, fontWeight: '600' }}>
+                                        {siteLatitude && siteLongitude ? 'Change Location' : 'Set Location'}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                                {siteLatitude && siteLongitude && (
+                                    <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                                        {siteLatitude.toFixed(4)}, {siteLongitude.toFixed(4)}
+                                    </ThemedText>
+                                )}
+                            </View>
                         </View>
 
                         <TouchableOpacity
@@ -254,6 +297,17 @@ export default function ManageSitesScreen() {
                     </ThemedView>
                 </KeyboardAvoidingView>
             </Modal>
+
+            <LocationPicker
+                visible={locationPickerVisible}
+                onClose={() => setLocationPickerVisible(false)}
+                onLocationSelect={(loc) => {
+                    setSiteLatitude(loc.latitude);
+                    setSiteLongitude(loc.longitude);
+                }}
+                initialLatitude={siteLatitude}
+                initialLongitude={siteLongitude}
+            />
 
             {/* Delete Confirmation Modal */}
             <Modal
@@ -345,6 +399,21 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         padding: 8,
+    },
+    locationButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        borderWidth: 1,
+        borderRadius: 8,
+        gap: 8,
+    },
+    picker: {
+        height: 50,
+        borderWidth: 1,
+        borderRadius: 12,
+        justifyContent: 'center',
+        paddingHorizontal: 8,
     },
     fab: {
         position: 'absolute',
