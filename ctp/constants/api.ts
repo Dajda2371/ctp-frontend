@@ -217,6 +217,29 @@ export async function getSites() {
     }
 }
 
+export async function getSite(id: number | string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch site');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getSite API error:', error);
+        throw error;
+    }
+}
+
 export async function createSite(data: { name: string; address: string; coordinator: string }) {
     const token = await getToken();
     try {
@@ -346,7 +369,7 @@ export async function createTask(data: {
     title: string;
     description?: string;
     status?: string;
-    priority?: string;
+    priority?: number;
     assignee?: string;
     photos?: string[];
 }) {
@@ -363,6 +386,7 @@ export async function createTask(data: {
 
         if (!response.ok) {
             const errorData = await response.json();
+            console.error('Create Task Validation Error:', JSON.stringify(errorData, null, 2));
             throw new Error(errorData.message || 'Failed to create task');
         }
 
@@ -378,7 +402,7 @@ export async function updateTask(id: number, data: {
     title?: string;
     description?: string;
     status?: string;
-    priority?: string;
+    priority?: number;
     assignee?: string;
     photos?: string[];
 }) {
@@ -395,6 +419,7 @@ export async function updateTask(id: number, data: {
 
         if (!response.ok) {
             const errorData = await response.json();
+            console.error('Update Task Validation Error:', JSON.stringify(errorData, null, 2));
             throw new Error(errorData.message || 'Failed to update task');
         }
 

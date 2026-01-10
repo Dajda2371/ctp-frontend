@@ -8,13 +8,29 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getTasks, getSites, createTask, updateTask, deleteTask, getUsers } from '@/constants/api';
 
+const PRIORITY_MAP: Record<string, number> = {
+    'LOWEST': 1,
+    'LOW': 2,
+    'MEDIUM': 3,
+    'HIGH': 4,
+    'HIGHEST': 5,
+};
+
+const REVERSE_PRIORITY_MAP: Record<number, string> = {
+    1: 'LOWEST',
+    2: 'LOW',
+    3: 'MEDIUM',
+    4: 'HIGH',
+    5: 'HIGHEST',
+};
+
 interface Task {
     id: number;
     site_id: number;
     title: string;
     description: string | null;
     status: string;
-    priority: string;
+    priority: number;
     assignee: string | null;
     photos: string[];
 }
@@ -104,7 +120,7 @@ export default function TasksScreen() {
             setTitle(task.title);
             setDescription(task.description || '');
             setStatus(task.status);
-            setPriority(task.priority);
+            setPriority(REVERSE_PRIORITY_MAP[task.priority] || 'MEDIUM');
             setAssignee(task.assignee || '');
         } else {
             setEditingTask(null);
@@ -142,7 +158,7 @@ export default function TasksScreen() {
                 title,
                 description: description || undefined,
                 status,
-                priority,
+                priority: PRIORITY_MAP[priority] || 2,
                 assignee: assignee || undefined,
             };
 
@@ -190,11 +206,13 @@ export default function TasksScreen() {
         }
     };
 
-    const getPriorityColor = (priority: string) => {
+    const getPriorityColor = (priority: number) => {
         switch (priority) {
-            case 'LOW': return '#8E8E93';
-            case 'MEDIUM': return '#FF9500';
-            case 'HIGH': return '#FF3B30';
+            case 1: return '#8E8E93'; // LOWEST - Grey
+            case 2: return '#32ADE6'; // LOW - Blue
+            case 3: return '#FF9500'; // MEDIUM - Orange
+            case 4: return '#FF2D55'; // HIGH - Pinkish Red
+            case 5: return '#AF52DE'; // HIGHEST - Purple
             default: return theme.text;
         }
     };
@@ -215,7 +233,7 @@ export default function TasksScreen() {
                     </View>
                     <View style={[styles.badge, { backgroundColor: getPriorityColor(item.priority) + '20' }]}>
                         <ThemedText style={[styles.badgeText, { color: getPriorityColor(item.priority) }]}>
-                            {item.priority}
+                            {REVERSE_PRIORITY_MAP[item.priority] || 'MEDIUM'}
                         </ThemedText>
                     </View>
                 </View>
@@ -386,9 +404,11 @@ export default function TasksScreen() {
                                                 fontSize: 16,
                                             }}
                                         >
+                                            <option value="LOWEST">Lowest</option>
                                             <option value="LOW">Low</option>
                                             <option value="MEDIUM">Medium</option>
                                             <option value="HIGH">High</option>
+                                            <option value="HIGHEST">Highest</option>
                                         </select>
                                     </View>
                                 </View>
