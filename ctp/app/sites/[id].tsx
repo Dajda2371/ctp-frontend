@@ -11,6 +11,7 @@ import { getSite, getTasks, createTask, updateTask, deleteTask, getUsers, update
 import { TaskCard } from '@/components/TaskCard';
 import { SelectModal } from '@/components/SelectModal';
 import { DatePickerModal } from '@/components/DatePickerModal';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -95,7 +96,7 @@ export default function SiteTasksScreen() {
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [siteData, tasksData, usersData] = await Promise.all([
                 getSite(id as string),
@@ -111,16 +112,18 @@ export default function SiteTasksScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         fetchData();
-    }, [id]);
+    }, [fetchData]);
+
+    useAutoRefresh(fetchData);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchData();
-    }, [id]);
+    }, [fetchData]);
 
     const filteredTasks = tasks.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -9,6 +9,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getSites, getUsers } from '@/constants/api'; // Import API call
 import { Site } from '@/components/SiteCard'; // Use Site type with manager names
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 interface User {
     id: number;
@@ -24,7 +25,7 @@ export default function SitesScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const fetchSites = async () => {
+    const fetchSites = useCallback(async () => {
         try {
             const [sitesData, usersData] = await Promise.all([
                 getSites(),
@@ -47,16 +48,18 @@ export default function SitesScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchSites();
-    }, []);
+    }, [fetchSites]);
+
+    useAutoRefresh(fetchSites);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchSites();
-    }, []);
+    }, [fetchSites]);
 
     const renderSiteItem = ({ item }: { item: Site }) => (
         <TouchableOpacity

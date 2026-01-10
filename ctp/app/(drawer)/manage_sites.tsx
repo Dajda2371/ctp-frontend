@@ -15,6 +15,7 @@ import { getAddressFromCoordinates } from '@/utils/geocoding';
 import { Linking } from 'react-native';
 import { SiteCard, Site } from '@/components/SiteCard';
 import { SelectModal } from '@/components/SelectModal';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 
 
@@ -55,7 +56,7 @@ export default function ManageSitesScreen() {
     const [fmPickerVisible, setFmPickerVisible] = useState(false);
     const [pmPickerVisible, setPmPickerVisible] = useState(false);
 
-    const fetchSites = async () => {
+    const fetchSites = useCallback(async () => {
         try {
             const [sitesData, facilityManagersData, propertyManagersData, usersData] = await Promise.all([
                 getSites(),
@@ -81,16 +82,18 @@ export default function ManageSitesScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchSites();
-    }, []);
+    }, [fetchSites]);
+
+    useAutoRefresh(fetchSites);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchSites();
-    }, []);
+    }, [fetchSites]);
 
     const openModal = (site?: Site) => {
         if (site) {

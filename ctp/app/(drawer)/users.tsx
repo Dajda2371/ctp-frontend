@@ -10,6 +10,7 @@ import { UserRole, ROLE_LABELS, getManageableRoles, canEditUser } from '@/consta
 import { getUsers, createUser, updateUser, deleteUser } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { SelectModal } from '@/components/SelectModal';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 interface User {
     id: string | number; // Handle both string and number IDs from API
@@ -45,7 +46,7 @@ export default function UsersScreen() {
 
     const manageableRoles = getManageableRoles(currentUser?.role);
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         if (!currentUser) return; // Wait for auth
 
         try {
@@ -67,18 +68,20 @@ export default function UsersScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentUser]);
 
     useEffect(() => {
         if (!isAuthLoading) {
             fetchUsers();
         }
-    }, [currentUser, isAuthLoading]);
+    }, [currentUser, isAuthLoading, fetchUsers]);
+
+    useAutoRefresh(fetchUsers);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchUsers();
-    }, []);
+    }, [fetchUsers]);
 
     const openModal = (user?: User) => {
         if (user) {

@@ -12,6 +12,7 @@ import { LocationPicker } from '@/components/LocationPicker';
 import { TaskCard } from '@/components/TaskCard';
 import { SelectModal } from '@/components/SelectModal';
 import { DatePickerModal } from '@/components/DatePickerModal';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -88,7 +89,7 @@ export default function MyTasksScreen() {
     const [priorityPickerVisible, setPriorityPickerVisible] = useState(false);
     const [datePickerVisible, setDatePickerVisible] = useState(false);
 
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             const data = await getMyTasks();
             setTasks(data);
@@ -98,7 +99,7 @@ export default function MyTasksScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
     const fetchSites = async () => {
         try {
@@ -113,12 +114,14 @@ export default function MyTasksScreen() {
     useEffect(() => {
         fetchTasks();
         fetchSites();
-    }, []);
+    }, [fetchTasks]);
+
+    useAutoRefresh(fetchTasks);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchTasks();
-    }, []);
+    }, [fetchTasks]);
 
     const openModal = (task?: Task) => {
         if (task) {
