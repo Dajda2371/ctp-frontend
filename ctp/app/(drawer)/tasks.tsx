@@ -6,7 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getTasks, getSites, getSite, createTask, updateTask, deleteTask, getUsers } from '@/constants/api';
+import { getTasks, getSites, getSite, createTask, updateTask, deleteTask, getUsers, updateTaskStatus, updateTaskPriority } from '@/constants/api';
 import { LocationPicker } from '@/components/LocationPicker';
 import { TaskCard } from '@/components/TaskCard';
 import { SelectModal } from '@/components/SelectModal';
@@ -92,6 +92,11 @@ export default function TasksScreen() {
     const [priorityPickerVisible, setPriorityPickerVisible] = useState(false);
     const [assigneePickerVisible, setAssigneePickerVisible] = useState(false);
     const [datePickerVisible, setDatePickerVisible] = useState(false);
+
+    // Quick Edit States
+    const [quickEditTask, setQuickEditTask] = useState<Task | null>(null);
+    const [quickStatusPickerVisible, setQuickStatusPickerVisible] = useState(false);
+    const [quickPriorityPickerVisible, setQuickPriorityPickerVisible] = useState(false);
 
     const fetchTasks = async () => {
         try {
@@ -251,6 +256,31 @@ export default function TasksScreen() {
         }
     };
 
+    const handleQuickStatusChange = async (newStatus: string) => {
+        if (!quickEditTask) return;
+        try {
+            await updateTaskStatus(quickEditTask.id, newStatus);
+            setTasks(prev => prev.map(t => t.id === quickEditTask.id ? { ...t, status: newStatus } : t));
+            setQuickStatusPickerVisible(false);
+            setQuickEditTask(null);
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to update status');
+        }
+    };
+
+    const handleQuickPriorityChange = async (newPriorityStr: string) => {
+        if (!quickEditTask) return;
+        const newPriority = PRIORITY_MAP[newPriorityStr];
+        try {
+            await updateTaskPriority(quickEditTask.id, newPriority);
+            setTasks(prev => prev.map(t => t.id === quickEditTask.id ? { ...t, priority: newPriority } : t));
+            setQuickPriorityPickerVisible(false);
+            setQuickEditTask(null);
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Failed to update priority');
+        }
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'TODO': return '#FF9500';
@@ -281,6 +311,14 @@ export default function TasksScreen() {
             task={item}
             siteName={getSiteName(item.site_id)}
             onEdit={openModal}
+            onStatusPress={() => {
+                setQuickEditTask(item);
+                setQuickStatusPickerVisible(true);
+            }}
+            onPriorityPress={() => {
+                setQuickEditTask(item);
+                setQuickPriorityPickerVisible(true);
+            }}
         />
     );
 
@@ -686,6 +724,38 @@ export default function TasksScreen() {
                 onSelect={setDueDate}
                 selectedDate={dueDate}
                 title="Select Due Date"
+            />
+
+            {/* Quick Edit Modals */}
+            <SelectModal
+                visible={quickStatusPickerVisible}
+                onClose={() => {
+                    setQuickStatusPickerVisible(false);
+                    setQuickEditTask(null);
+                }}
+                onSelect={handleQuickStatusChange}
+                options={[
+                    { label: 'To Do', value: 'TODO' },
+                    { label: 'In Progress', value: 'IN_PROGRESS' },
+                    { label: 'Done', value: 'DONE' },
+                ]}
+                selectedValue={quickEditTask?.status || 'TODO'}
+                title="Update Status"
+            />
+
+            <SelectModal
+                visible={quickPriorityPickerVisible}
+                onClose={() => {
+                    setQuickPriorityPickerVisible(false);
+                    setQuickEditTask(null);
+                }}
+                onSelect={handleQuickPriorityChange}
+                options={Object.keys(PRIORITY_MAP).map(p => ({
+                    label: p.charAt(0) + p.slice(1).toLowerCase(),
+                    value: p // We pass string key here but will convert to number map in handler
+                }))}
+                selectedValue={quickEditTask ? REVERSE_PRIORITY_MAP[quickEditTask.priority] : 'MEDIUM'}
+                title="Update Priority"
             />
         </ThemedView >
     );

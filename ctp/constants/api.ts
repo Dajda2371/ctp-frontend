@@ -717,6 +717,54 @@ export async function updateTask(id: number, data: {
     }
 }
 
+export async function updateTaskStatus(id: number, status: string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update task status');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateTaskStatus API error:', error);
+        throw error;
+    }
+}
+
+export async function updateTaskPriority(id: number, priority: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${id}/priority`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ priority }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update task priority');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateTaskPriority API error:', error);
+        throw error;
+    }
+}
+
 export async function deleteTask(id: number) {
     const token = await getToken();
     try {

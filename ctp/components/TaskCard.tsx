@@ -28,6 +28,8 @@ interface TaskCardProps {
     task: Task;
     siteName: string;
     onEdit: (task: Task) => void;
+    onStatusPress?: () => void;
+    onPriorityPress?: () => void;
 }
 
 const REVERSE_PRIORITY_MAP: Record<number, string> = {
@@ -38,7 +40,7 @@ const REVERSE_PRIORITY_MAP: Record<number, string> = {
     5: 'HIGHEST',
 };
 
-export function TaskCard({ task, siteName, onEdit }: TaskCardProps) {
+export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPress }: TaskCardProps) {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [address, setAddress] = useState<string | null>(null);
@@ -92,16 +94,20 @@ export function TaskCard({ task, siteName, onEdit }: TaskCardProps) {
         <ThemedView style={[styles.card, { borderColor: theme.neutral + '20', backgroundColor: 'rgba(100, 120, 140, 0.08)' }]}>
             <View style={styles.cardHeader}>
                 <View style={styles.taskBadges}>
-                    <View style={[styles.badge, { backgroundColor: getStatusColor(task.status) + '20' }]}>
-                        <ThemedText style={[styles.badgeText, { color: getStatusColor(task.status) }]}>
-                            {task.status.replace('_', ' ')}
-                        </ThemedText>
-                    </View>
-                    <View style={[styles.badge, { backgroundColor: getPriorityColor(task.priority) + '20' }]}>
-                        <ThemedText style={[styles.badgeText, { color: getPriorityColor(task.priority) }]}>
-                            {REVERSE_PRIORITY_MAP[task.priority] || 'MEDIUM'}
-                        </ThemedText>
-                    </View>
+                    <TouchableOpacity onPress={onStatusPress} disabled={!onStatusPress}>
+                        <View style={[styles.badge, { backgroundColor: getStatusColor(task.status) + '20' }]}>
+                            <ThemedText style={[styles.badgeText, { color: getStatusColor(task.status) }]}>
+                                {task.status.replace('_', ' ')}
+                            </ThemedText>
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={onPriorityPress} disabled={!onPriorityPress}>
+                        <View style={[styles.badge, { backgroundColor: getPriorityColor(task.priority) + '20' }]}>
+                            <ThemedText style={[styles.badgeText, { color: getPriorityColor(task.priority) }]}>
+                                {REVERSE_PRIORITY_MAP[task.priority] || 'MEDIUM'}
+                            </ThemedText>
+                        </View>
+                    </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={() => onEdit(task)} style={styles.actionButton}>
                     <IconSymbol name="pencil" size={20} color={theme.primary} />
