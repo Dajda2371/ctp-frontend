@@ -30,6 +30,7 @@ export default {
         siteManagement: "Site Management",
         userManagement: "User Management",
         users: "Users",
+        chat: "Chat",
         language: "Change Language",
         selectLanguage: "Select Language",
     },

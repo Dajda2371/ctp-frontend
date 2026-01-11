@@ -13,7 +13,7 @@ import { SelectModal } from '@/components/SelectModal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useState } from 'react';
 
-function DrawerToggle() {
+export function DrawerToggle() {
     const navigation = useNavigation();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
@@ -131,6 +131,16 @@ export default function DrawerLayout() {
                         drawerLabel: i18n.t('drawer.myTasks'),
                         title: i18n.t('drawer.myTasks'),
                         drawerIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
+                    }}
+                />
+
+                <Drawer.Screen
+                    name="chat"
+                    options={{
+                        drawerLabel: i18n.t('drawer.chat'),
+                        title: i18n.t('drawer.chat'),
+                        drawerIcon: ({ color }) => <IconSymbol size={24} name="message.fill" color={color} />,
+                        headerShown: false,
                     }}
                 />
 

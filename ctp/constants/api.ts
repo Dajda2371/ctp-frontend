@@ -728,3 +728,174 @@ export async function deleteAllTaskPhotos(taskId: number | string) {
         throw error;
     }
 }
+
+// Chat Interfaces
+export interface ChatFile {
+    id: number;
+    filename: string;
+    url: string;
+}
+
+export interface ChatMessage {
+    id: number;
+    sender_id: number;
+    sender_name: string;
+    content: string;
+    sent_at: string;
+    files: ChatFile[];
+}
+
+export interface ChatGroup {
+    id: number;
+    name: string;
+    is_group: boolean;
+    created_at: string;
+    members_count: number;
+}
+
+// Chat Operations
+
+export async function getChatGroups() {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/chat/groups`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to fetch chat groups'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getChatGroups API error:', error);
+        throw error;
+    }
+}
+
+export async function createChatGroup(data: { name?: string; user_ids: number[]; is_group: boolean }) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/chat/groups`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to create chat group'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('createChatGroup API error:', error);
+        throw error;
+    }
+}
+
+export async function getChatMessages(groupId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/chat/groups/${groupId}/messages`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to fetch messages'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getChatMessages API error:', error);
+        throw error;
+    }
+}
+
+export async function sendChatMessage(groupId: number, content: string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/chat/groups/${groupId}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to send message'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('sendChatMessage API error:', error);
+        throw error;
+    }
+}
+
+export async function uploadChatFile(messageId: number, file: any) {
+    const token = await getToken();
+
+    try {
+        let response;
+        if (Platform.OS === 'web') {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            response = await fetch(`${API_BASE_URL}/chat/messages/${messageId}/files`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+        } else {
+            // Read file as Base64
+            const base64 = await FileSystem.readAsStringAsync(file.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            const payload = {
+                filename: file.name || 'photo.jpg',
+                content: base64,
+                mime_type: file.type || 'image/jpeg',
+            };
+
+            response = await fetch(`${API_BASE_URL}/chat/messages/${messageId}/files`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to upload file'));
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error('uploadChatFile API error:', error);
+        throw error;
+    }
+}

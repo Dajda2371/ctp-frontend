@@ -43,6 +43,9 @@ const MAPPING = {
   'arrow.down.right.and.arrow.up.left': 'close-fullscreen',
   'calendar': 'calendar-today',
   'square.and.arrow.down': 'file-download',
+  'message.fill': 'chat',
+  'paperclip': 'attach-file',
+  'globe': 'public',
 } as unknown as IconMapping;
 
 /**
