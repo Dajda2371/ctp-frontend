@@ -115,11 +115,20 @@ export default function SiteTasksScreen() {
 
     const fetchData = useCallback(async () => {
         try {
-            const [siteData, tasksData, usersData] = await Promise.all([
+            const [siteData, tasksData] = await Promise.all([
                 getSite(id as string),
                 getTasks(parseInt(id as string)),
-                getUsers()
             ]);
+
+            let usersData: User[] = [];
+            // Try to fetch users, but don't fail the whole operation if it fails
+            try {
+                usersData = await getUsers() as User[];
+            } catch (userError) {
+                console.error('Failed to fetch users:', userError);
+                // Continue with empty users array
+            }
+
             setSite(siteData);
             setTasks(tasksData);
             setUsers(usersData);

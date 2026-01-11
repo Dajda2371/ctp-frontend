@@ -150,6 +150,15 @@ export default function DrawerLayout() {
                 />
 
                 <Drawer.Screen
+                    name="planner"
+                    options={{
+                        drawerLabel: i18n.t('drawer.planner'),
+                        title: i18n.t('drawer.planner'),
+                        drawerIcon: ({ color }) => <IconSymbol size={24} name="calendar" color={color} />,
+                    }}
+                />
+
+                <Drawer.Screen
                     name="manage_sites"
                     options={{
                         drawerLabel: i18n.t('drawer.siteManagement'),

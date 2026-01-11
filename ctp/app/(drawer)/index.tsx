@@ -28,12 +28,18 @@ export default function SitesScreen() {
 
     const fetchSites = useCallback(async () => {
         try {
-            const [sitesData, usersData] = await Promise.all([
-                getSites(),
-                getUsers()
-            ]);
+            const sitesData = await getSites();
+            let usersData: User[] = [];
 
-            const usersMap = new Map((usersData as User[]).map(u => [u.id, u.name]));
+            // Try to fetch users, but don't fail the whole operation if it fails
+            try {
+                usersData = await getUsers() as User[];
+            } catch (userError) {
+                console.error('Failed to fetch users for manager names:', userError);
+                // Continue with empty users array
+            }
+
+            const usersMap = new Map(usersData.map(u => [u.id, u.name]));
 
             const enrichedSites = (sitesData as Site[]).map(site => ({
                 ...site,

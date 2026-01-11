@@ -899,3 +899,147 @@ export async function uploadChatFile(messageId: number, file: any) {
         throw error;
     }
 }
+
+// Planner Interfaces
+export interface PlannerSettings {
+    start_time: string;  // "HH:MM", e.g. "09:00"
+    end_time: string;    // "HH:MM", e.g. "17:00"
+    work_days: string;   // CSV string, e.g. "0,1,2,3,4"
+}
+
+export interface PlannerEvent {
+    id: number;
+    user_id: number;
+    task_id?: number | null;
+    start_datetime: string;  // ISO 8601
+    end_datetime: string;    // ISO 8601
+    event_type: 'work' | 'time_off' | 'task';
+    title?: string;
+    description?: string;
+}
+
+// Planner Operations
+
+export async function getPlannerSettings() {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/planner/settings`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to fetch planner settings'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getPlannerSettings API error:', error);
+        throw error;
+    }
+}
+
+export async function updatePlannerSettings(data: Partial<PlannerSettings>) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/planner/settings`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to update planner settings'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updatePlannerSettings API error:', error);
+        throw error;
+    }
+}
+
+export async function getPlannerEvents(startDate: string, endDate: string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/planner/events?start_date=${startDate}&end_date=${endDate}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to fetch planner events'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getPlannerEvents API error:', error);
+        throw error;
+    }
+}
+
+export async function createPlannerEvent(data: {
+    start_datetime: string;
+    end_datetime: string;
+    event_type: 'work' | 'time_off' | 'task';
+    title?: string;
+    description?: string;
+    task_id?: number;
+}) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/planner/events`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to create planner event'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('createPlannerEvent API error:', error);
+        throw error;
+    }
+}
+
+export async function deletePlannerEvent(id: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/planner/events/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to delete planner event'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('deletePlannerEvent API error:', error);
+        throw error;
+    }
+}
