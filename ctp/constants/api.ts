@@ -448,6 +448,17 @@ export async function getUsers() {
     }
 }
 
+export async function getPossibleFacilityManagers() {
+    const users = await getUsers();
+    // Filter for Facility Managers or Admins if needed, but usually just FM
+    return users.filter((u: any) => u.role === 'facility_manager');
+}
+
+export async function getPossiblePropertyManagers() {
+    const users = await getUsers();
+    return users.filter((u: any) => u.role === 'property_manager');
+}
+
 export async function updateUserRole(userId: number, role: string) {
     const token = await getToken();
     try {

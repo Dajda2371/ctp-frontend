@@ -40,7 +40,7 @@ interface Task {
     priority: number;
     assignee: string | null;
     due_date: string | null;
-    photos: string[];
+    photos: (string | { id: number; url: string } | { url: string })[];
     latitude?: number;
     longitude?: number;
 }
@@ -391,6 +391,7 @@ export default function TasksScreen() {
                 setQuickEditTask(item);
                 setQuickPriorityPickerVisible(true);
             }}
+            onTaskUpdate={fetchTasks}
         />
     );
 

@@ -44,7 +44,7 @@ interface Task {
     priority: number;
     assignee: string | null;
     due_date: string | null;
-    photos: string[];
+    photos: (string | { id: number; url: string } | { url: string })[];
 }
 
 interface Site {
@@ -355,6 +355,7 @@ export default function SiteTasksScreen() {
                 setQuickEditTask(item);
                 setQuickPriorityPickerVisible(true);
             }}
+            onTaskUpdate={fetchData}
         />
     );
 

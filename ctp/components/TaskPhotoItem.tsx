@@ -4,12 +4,9 @@ import { Image } from 'expo-image';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_BASE_URL, getToken } from '@/constants/api';
 
-interface TaskPhotoItemProps {
-    photo: { id: number; url: string };
-    onDelete: (id: number) => void;
-}
 
-export function TaskPhotoItem({ photo, onDelete }: TaskPhotoItemProps) {
+
+export function TaskPhotoItem({ photo, onDelete, onPress }: { photo: { id: number; url: string }; onDelete?: (id: number) => void; onPress?: (photo: { id: number; url: string }) => void }) {
     const [imageSource, setImageSource] = useState<{ uri: string; headers?: Record<string, string> } | null>(null);
 
     useEffect(() => {
@@ -63,19 +60,32 @@ export function TaskPhotoItem({ photo, onDelete }: TaskPhotoItemProps) {
         return <View style={styles.loadingPlaceholder} />;
     }
 
+    const imageComponent = (
+        <Image
+            source={imageSource}
+            style={styles.image}
+            contentFit="cover"
+        />
+    );
+
     return (
         <View style={styles.container}>
-            <Image
-                source={imageSource}
-                style={styles.image}
-                contentFit="cover"
-            />
-            <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => onDelete(photo.id)}
-            >
-                <IconSymbol name="xmark" size={12} color="white" />
-            </TouchableOpacity>
+            {onPress ? (
+                <TouchableOpacity onPress={() => onPress(photo)}>
+                    {imageComponent}
+                </TouchableOpacity>
+            ) : (
+                imageComponent
+            )}
+
+            {onDelete && (
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => onDelete(photo.id)}
+                >
+                    <IconSymbol name="xmark" size={12} color="white" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }

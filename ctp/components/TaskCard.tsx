@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Linking, Platform, Alert } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -7,6 +7,9 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getAddressFromCoordinates } from '@/utils/geocoding';
 import { LocationPicker } from '@/components/LocationPicker';
+import { PhotoGalleryModal } from '@/components/PhotoGalleryModal';
+import { TaskPhotoItem } from '@/components/TaskPhotoItem';
+import { deleteTaskPhoto, uploadTaskPhoto, getTaskPhotos } from '@/constants/api';
 
 // Define Task Interface locally if not exported, or better, import from central types
 // For now, mirroring the structure
@@ -19,7 +22,7 @@ export interface Task {
     priority: number;
     assignee: string | null;
     due_date: string | null;
-    photos: string[];
+    photos: (string | { id: number; url: string } | { url: string })[]; // Allow both for robustness
     latitude?: number;
     longitude?: number;
 }
@@ -30,6 +33,7 @@ interface TaskCardProps {
     onEdit: (task: Task) => void;
     onStatusPress?: () => void;
     onPriorityPress?: () => void;
+    onTaskUpdate?: () => void;
 }
 
 const REVERSE_PRIORITY_MAP: Record<number, string> = {
@@ -40,11 +44,15 @@ const REVERSE_PRIORITY_MAP: Record<number, string> = {
     5: 'HIGHEST',
 };
 
-export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPress }: TaskCardProps) {
+export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPress, onTaskUpdate }: TaskCardProps) {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [address, setAddress] = useState<string | null>(null);
     const [mapModalVisible, setMapModalVisible] = useState(false);
+    const [galleryVisible, setGalleryVisible] = useState(false);
+    const [detailedPhotos, setDetailedPhotos] = useState<{ id: number; url: string }[]>([]);
+    const [loadingPhotos, setLoadingPhotos] = useState(false);
+    const [savingPhoto, setSavingPhoto] = useState(false);
 
     useEffect(() => {
         if (task.latitude && task.longitude) {
@@ -88,6 +96,63 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
             // Fallback to Google Maps web
             Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${task.latitude},${task.longitude}`);
         }
+    };
+
+    const handleOpenGallery = async () => {
+        setLoadingPhotos(true);
+        try {
+            // Fetch latest photos to ensure we have IDs
+            const data = await getTaskPhotos(task.id);
+            setDetailedPhotos(data.photos || []);
+            setGalleryVisible(true);
+        } catch (error) {
+            console.error("Failed to fetch photos", error);
+            Alert.alert("Error", "Could not load photos.");
+        } finally {
+            setLoadingPhotos(false);
+        }
+    };
+
+    const handlePhotoSave = async (originalUrl: string, newUri: string) => {
+        try {
+            setSavingPhoto(true);
+            const originalPhoto = detailedPhotos.find(p => p.url === originalUrl);
+
+            if (originalPhoto) {
+                // 1. Delete original photo
+                await deleteTaskPhoto(task.id, originalPhoto.id);
+            }
+
+            // 2. Upload new photo
+            const fileName = `edited-${Date.now()}.jpg`;
+            await uploadTaskPhoto(task.id, {
+                uri: newUri,
+                type: 'image/jpeg',
+                name: fileName
+            });
+
+            // 3. Refresh
+            if (onTaskUpdate) {
+                onTaskUpdate();
+            } else {
+                // Even if no global refresh, refresh local gallery
+                const data = await getTaskPhotos(task.id);
+                setDetailedPhotos(data.photos || []);
+            }
+            Alert.alert("Success", "Photo updated successfully.");
+        } catch (error) {
+            console.error("Failed to update photo", error);
+            Alert.alert("Error", "Failed to update photo.");
+        } finally {
+            setSavingPhoto(false);
+            setGalleryVisible(false);
+        }
+    };
+
+    // Helper to get photo URL safely
+    const getPhotoUrl = (photo: string | { url: string }): string => {
+        if (typeof photo === 'string') return photo;
+        return photo.url;
     };
 
     return (
@@ -140,6 +205,29 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
                 </View>
             )}
 
+            {/* Photo Thumbnail */}
+            {task.photos && task.photos.length > 0 && (
+                <View style={styles.photoRow}>
+                    <TouchableOpacity onPress={handleOpenGallery} disabled={loadingPhotos}>
+                        <TaskPhotoItem
+                            photo={{ id: 0, url: getPhotoUrl(task.photos[0]) }}
+                            onPress={handleOpenGallery}
+                        // No onDelete here
+                        />
+                        {loadingPhotos && (
+                            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8 }}>
+                                <ThemedText style={{ color: 'white', fontWeight: 'bold' }}>...</ThemedText>
+                            </View>
+                        )}
+                        {task.photos.length > 1 && (
+                            <View style={[styles.photoBadge, { backgroundColor: theme.primary }]}>
+                                <ThemedText style={styles.photoBadgeText}>+{task.photos.length - 1}</ThemedText>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <View style={[styles.cardFooter, { borderTopColor: theme.neutral + '15' }]}>
                 <View style={styles.footerItem}>
                     <IconSymbol name="building.2.fill" size={14} color={theme.text} style={{ opacity: 0.6 }} />
@@ -175,6 +263,13 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
                 initialLongitude={task.longitude}
                 readOnly={true}
             // We don't need site location fallback here as we are viewing a specific task location
+            />
+
+            <PhotoGalleryModal
+                visible={galleryVisible}
+                photos={detailedPhotos}
+                onClose={() => setGalleryVisible(false)}
+                onSavePhoto={handlePhotoSave}
             />
         </ThemedView>
     );
@@ -231,6 +326,23 @@ const styles = StyleSheet.create({
     },
     mapButton: {
         padding: 6,
+    },
+    photoRow: {
+        flexDirection: 'row',
+        paddingVertical: 4,
+    },
+    photoBadge: {
+        position: 'absolute',
+        bottom: -5,
+        right: -5,
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+    },
+    photoBadgeText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     cardFooter: {
         flexDirection: 'row',
