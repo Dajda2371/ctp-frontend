@@ -8,6 +8,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { canManageSites, canManageUsers, ROLE_LABELS, UserRole } from '@/constants/roles';
 import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
+import i18n from '@/i18n';
+import { SelectModal } from '@/components/SelectModal';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useState } from 'react';
 
 function DrawerToggle() {
     const navigation = useNavigation();
@@ -40,6 +44,8 @@ function CustomDrawerContent(props: any) {
     const { signOut } = useAuth();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
+    const { locale, changeLanguage } = useLanguage();
+    const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
     return (
         <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
@@ -48,7 +54,15 @@ function CustomDrawerContent(props: any) {
             </View>
             <View style={styles.logoutContainer}>
                 <DrawerItem
-                    label="Logout"
+                    label={i18n.t('drawer.language')}
+                    onPress={() => setLanguageModalVisible(true)}
+                    icon={({ color, size }) => (
+                        <IconSymbol name="globe" size={size} color={color} />
+                    )}
+                    style={{ marginBottom: 0 }}
+                />
+                <DrawerItem
+                    label={i18n.t('drawer.logout')}
                     onPress={() => signOut()}
                     icon={({ color, size }) => (
                         <IconSymbol name="door.right.hand.open" size={size} color={color} />
@@ -57,6 +71,21 @@ function CustomDrawerContent(props: any) {
                     labelStyle={{ fontWeight: '600' }}
                 />
             </View>
+
+            <SelectModal
+                visible={languageModalVisible}
+                onClose={() => setLanguageModalVisible(false)}
+                onSelect={(value) => {
+                    changeLanguage(value);
+                    setLanguageModalVisible(false);
+                }}
+                options={[
+                    { label: 'English', value: 'en' },
+                    { label: 'Čeština', value: 'cs' }
+                ]}
+                selectedValue={locale}
+                title={i18n.t('drawer.selectLanguage')}
+            />
         </DrawerContentScrollView>
     );
 }
@@ -81,8 +110,8 @@ export default function DrawerLayout() {
                 <Drawer.Screen
                     name="index"
                     options={{
-                        drawerLabel: 'Sites',
-                        title: 'Sites',
+                        drawerLabel: i18n.t('drawer.sites'),
+                        title: i18n.t('drawer.sites'),
                         drawerIcon: ({ color }) => <IconSymbol size={24} name="building.2.fill" color={color} />,
                     }}
                 />
@@ -90,8 +119,8 @@ export default function DrawerLayout() {
                 <Drawer.Screen
                     name="tasks"
                     options={{
-                        drawerLabel: 'All Tasks',
-                        title: 'All Tasks',
+                        drawerLabel: i18n.t('drawer.allTasks'),
+                        title: i18n.t('drawer.allTasks'),
                         drawerIcon: ({ color }) => <IconSymbol size={24} name="checklist" color={color} />,
                     }}
                 />
@@ -99,8 +128,8 @@ export default function DrawerLayout() {
                 <Drawer.Screen
                     name="my_tasks"
                     options={{
-                        drawerLabel: 'My Tasks',
-                        title: 'My Tasks',
+                        drawerLabel: i18n.t('drawer.myTasks'),
+                        title: i18n.t('drawer.myTasks'),
                         drawerIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
                     }}
                 />
@@ -108,8 +137,8 @@ export default function DrawerLayout() {
                 <Drawer.Screen
                     name="manage_sites"
                     options={{
-                        drawerLabel: 'Site Management',
-                        title: 'Site Management',
+                        drawerLabel: i18n.t('drawer.siteManagement'),
+                        title: i18n.t('drawer.siteManagement'),
                         drawerIcon: ({ color }) => <IconSymbol size={24} name="building.2.crop.circle.fill" color={color} />,
                         drawerItemStyle: { display: canManageSites(user?.role) ? 'flex' : 'none' },
                     }}
@@ -118,8 +147,8 @@ export default function DrawerLayout() {
                 <Drawer.Screen
                     name="users"
                     options={{
-                        drawerLabel: 'User Management',
-                        title: 'Users',
+                        drawerLabel: i18n.t('drawer.userManagement'),
+                        title: i18n.t('drawer.users'),
                         drawerIcon: ({ color }) => <IconSymbol size={24} name="person.2.fill" color={color} />,
                         drawerItemStyle: { display: canManageUsers(user?.role) ? 'flex' : 'none' },
                     }}

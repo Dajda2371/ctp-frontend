@@ -1,4 +1,13 @@
+
 export const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKED_URL || '';
+
+function parseError(errorData: any, fallback: string): string {
+    const msg = errorData.message || errorData.detail;
+    if (typeof msg === 'string') return msg;
+    if (Array.isArray(msg)) return msg.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+    if (typeof msg === 'object') return JSON.stringify(msg);
+    return fallback;
+}
 
 export async function login(email: string, password: string) {
     try {
@@ -12,7 +21,7 @@ export async function login(email: string, password: string) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Login failed');
+            throw new Error(parseError(errorData, 'Login failed'));
         }
 
         return await response.json();
@@ -34,7 +43,7 @@ export async function register(email: string, password: string, full_name: strin
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Registration failed');
+            throw new Error(parseError(errorData, 'Registration failed'));
         }
 
         return await response.json();
@@ -89,7 +98,7 @@ export async function getMe() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch user details');
+            throw new Error(parseError(errorData, 'Failed to fetch user details'));
         }
 
         return await response.json();
@@ -113,7 +122,7 @@ export async function getSites() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch sites');
+            throw new Error(parseError(errorData, 'Failed to fetch sites'));
         }
 
         return await response.json();
@@ -123,7 +132,7 @@ export async function getSites() {
     }
 }
 
-export async function getSite(id: number) {
+export async function getSite(id: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
@@ -136,7 +145,7 @@ export async function getSite(id: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch site');
+            throw new Error(parseError(errorData, 'Failed to fetch site'));
         }
 
         return await response.json();
@@ -146,7 +155,7 @@ export async function getSite(id: number) {
     }
 }
 
-export async function createSite(name: string, location?: string) {
+export async function createSite(siteData: any) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites`, {
@@ -155,12 +164,12 @@ export async function createSite(name: string, location?: string) {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ name, location }),
+            body: JSON.stringify(siteData),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to create site');
+            throw new Error(parseError(errorData, 'Failed to create site'));
         }
 
         return await response.json();
@@ -170,7 +179,7 @@ export async function createSite(name: string, location?: string) {
     }
 }
 
-export async function updateSite(id: number, name: string, location?: string) {
+export async function updateSite(id: number | string, siteData: any) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
@@ -179,12 +188,12 @@ export async function updateSite(id: number, name: string, location?: string) {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ name, location }),
+            body: JSON.stringify(siteData),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update site');
+            throw new Error(parseError(errorData, 'Failed to update site'));
         }
 
         return await response.json();
@@ -194,7 +203,7 @@ export async function updateSite(id: number, name: string, location?: string) {
     }
 }
 
-export async function deleteSite(id: number) {
+export async function deleteSite(id: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
@@ -207,7 +216,7 @@ export async function deleteSite(id: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete site');
+            throw new Error(parseError(errorData, 'Failed to delete site'));
         }
 
         return await response.json();
@@ -231,7 +240,7 @@ export async function getTasks() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch tasks');
+            throw new Error(parseError(errorData, 'Failed to fetch tasks'));
         }
 
         return await response.json();
@@ -241,7 +250,7 @@ export async function getTasks() {
     }
 }
 
-export async function getTasksBySiteId(siteId: number) {
+export async function getTasksBySiteId(siteId: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${siteId}/tasks`, {
@@ -254,7 +263,7 @@ export async function getTasksBySiteId(siteId: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch tasks');
+            throw new Error(parseError(errorData, 'Failed to fetch tasks'));
         }
 
         return await response.json();
@@ -265,22 +274,17 @@ export async function getTasksBySiteId(siteId: number) {
 }
 
 export async function getMyTasks() {
-    const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks/my`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
+        // WORKAROUND: GET /tasks/my seems to be broken (shadowed by GET /tasks/{id}).
+        // We fetch all tasks and filter by the current logged-in user.
+        const [tasks, user] = await Promise.all([getTasks(), getMe()]);
+
+        // Filter tasks where the assignee matches the user's name or ID
+        // The backend might return assignee as a name (string) or ID.
+        return tasks.filter((task: any) => {
+            if (!task.assignee) return false;
+            return task.assignee === user.name || task.assigned_user_id === user.id;
         });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch my tasks');
-        }
-
-        return await response.json();
     } catch (error) {
         console.error('getMyTasks API error:', error);
         throw error;
@@ -298,7 +302,7 @@ export async function createTask(task: {
 }) {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/sites/${task.site_id}/tasks`, {
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -309,7 +313,7 @@ export async function createTask(task: {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to create task');
+            throw new Error(parseError(errorData, 'Failed to create task'));
         }
 
         return await response.json();
@@ -320,7 +324,7 @@ export async function createTask(task: {
 }
 
 export async function updateTask(
-    taskId: number,
+    taskId: number | string,
     updates: {
         title?: string;
         description?: string;
@@ -343,7 +347,7 @@ export async function updateTask(
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update task');
+            throw new Error(parseError(errorData, 'Failed to update task'));
         }
 
         return await response.json();
@@ -353,7 +357,7 @@ export async function updateTask(
     }
 }
 
-export async function updateTaskStatus(taskId: number, status: string) {
+export async function updateTaskStatus(taskId: number | string, status: string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/status`, {
@@ -367,7 +371,7 @@ export async function updateTaskStatus(taskId: number, status: string) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update task status');
+            throw new Error(parseError(errorData, 'Failed to update task status'));
         }
 
         return await response.json();
@@ -377,7 +381,7 @@ export async function updateTaskStatus(taskId: number, status: string) {
     }
 }
 
-export async function updateTaskPriority(taskId: number, priority: string | number) {
+export async function updateTaskPriority(taskId: number | string, priority: string | number) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/priority`, {
@@ -391,7 +395,7 @@ export async function updateTaskPriority(taskId: number, priority: string | numb
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update task priority');
+            throw new Error(parseError(errorData, 'Failed to update task priority'));
         }
 
         return await response.json();
@@ -401,7 +405,7 @@ export async function updateTaskPriority(taskId: number, priority: string | numb
     }
 }
 
-export async function deleteTask(taskId: number) {
+export async function deleteTask(taskId: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
@@ -414,7 +418,7 @@ export async function deleteTask(taskId: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete task');
+            throw new Error(parseError(errorData, 'Failed to delete task'));
         }
 
         return await response.json();
@@ -438,7 +442,7 @@ export async function getUsers() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch users');
+            throw new Error(parseError(errorData, 'Failed to fetch users'));
         }
 
         return await response.json();
@@ -459,7 +463,7 @@ export async function getPossiblePropertyManagers() {
     return users.filter((u: any) => u.role === 'property_manager');
 }
 
-export async function updateUserRole(userId: number, role: string) {
+export async function updateUserRole(userId: number | string, role: string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
@@ -473,7 +477,7 @@ export async function updateUserRole(userId: number, role: string) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update user role');
+            throw new Error(parseError(errorData, 'Failed to update user role'));
         }
 
         return await response.json();
@@ -483,7 +487,7 @@ export async function updateUserRole(userId: number, role: string) {
     }
 }
 
-export async function deleteUser(userId: number) {
+export async function deleteUser(userId: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
@@ -496,7 +500,7 @@ export async function deleteUser(userId: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete user');
+            throw new Error(parseError(errorData, 'Failed to delete user'));
         }
 
         return await response.json();
@@ -506,8 +510,57 @@ export async function deleteUser(userId: number) {
     }
 }
 
+// Add missing createUser and updateUser functions
+export async function createUser(user: { email: string; password?: string; name: string; role: string }) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(user),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to create user'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('createUser API error:', error);
+        throw error;
+    }
+}
+
+export async function updateUser(id: string | number, user: { name?: string; email?: string; role?: string }) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(user),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(parseError(errorData, 'Failed to update user'));
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateUser API error:', error);
+        throw error;
+    }
+}
+
 // Photo operations
-export async function getTaskPhotos(taskId: number) {
+export async function getTaskPhotos(taskId: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos`, {
@@ -520,7 +573,7 @@ export async function getTaskPhotos(taskId: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch task photos');
+            throw new Error(parseError(errorData, 'Failed to fetch task photos'));
         }
 
         return await response.json(); // Returns { photos: TaskPhoto[] }
@@ -530,7 +583,7 @@ export async function getTaskPhotos(taskId: number) {
     }
 }
 
-export async function uploadTaskPhoto(taskId: number, file: { uri: string; type: string; name: string }) {
+export async function uploadTaskPhoto(taskId: number | string, file: { uri: string; type: string; name: string }) {
     const token = await getToken();
 
     if (Platform.OS === 'web') {
@@ -630,7 +683,7 @@ export async function uploadTaskPhoto(taskId: number, file: { uri: string; type:
     }
 }
 
-export async function deleteTaskPhoto(taskId: number, photoId: number) {
+export async function deleteTaskPhoto(taskId: number | string, photoId: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos/${photoId}`, {
@@ -643,7 +696,7 @@ export async function deleteTaskPhoto(taskId: number, photoId: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete photo');
+            throw new Error(parseError(errorData, 'Failed to delete photo'));
         }
 
         return await response.json();
@@ -653,7 +706,7 @@ export async function deleteTaskPhoto(taskId: number, photoId: number) {
     }
 }
 
-export async function deleteAllTaskPhotos(taskId: number) {
+export async function deleteAllTaskPhotos(taskId: number | string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos`, {
@@ -666,7 +719,7 @@ export async function deleteAllTaskPhotos(taskId: number) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete all photos');
+            throw new Error(parseError(errorData, 'Failed to delete all photos'));
         }
 
         return await response.json();

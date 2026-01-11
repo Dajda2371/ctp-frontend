@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import i18n from '@/i18n';
 
 interface DatePickerModalProps {
     visible: boolean;
@@ -20,7 +21,7 @@ export function DatePickerModal({
     onClose,
     onSelect,
     selectedDate,
-    title = 'Select Date',
+    title,
 }: DatePickerModalProps) {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
@@ -127,7 +128,7 @@ export function DatePickerModal({
                     })
                 ]}>
                     <View style={[styles.header, { borderBottomColor: theme.neutral + '30' }]}>
-                        <ThemedText type="subtitle">{title}</ThemedText>
+                        <ThemedText type="subtitle">{title || i18n.t('common.selectDate')}</ThemedText>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                             <IconSymbol name="xmark" size={22} color={theme.icon} />
                         </TouchableOpacity>
@@ -175,7 +176,7 @@ export function DatePickerModal({
                         style={[styles.confirmButton, { backgroundColor: theme.primary }]}
                         onPress={handleConfirm}
                     >
-                        <ThemedText style={styles.confirmText}>Confirm</ThemedText>
+                        <ThemedText style={styles.confirmText}>{i18n.t('common.confirm')}</ThemedText>
                     </TouchableOpacity>
                 </ThemedView>
             </View>

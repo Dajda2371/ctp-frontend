@@ -11,6 +11,7 @@ import { getUsers, createUser, updateUser, deleteUser } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { SelectModal } from '@/components/SelectModal';
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import i18n from '@/i18n';
 
 interface User {
     id: string | number; // Handle both string and number IDs from API
@@ -63,7 +64,7 @@ export default function UsersScreen() {
             setUsers(filteredUsers);
         } catch (error: any) {
             console.error('fetchUsers error:', error);
-            Alert.alert('Error', error.message || 'Failed to fetch users');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('users.fetchFailed'));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -111,11 +112,11 @@ export default function UsersScreen() {
 
     const handleSubmit = async () => {
         if (!email) {
-            Alert.alert('Validation Error', 'Email is required.');
+            Alert.alert(i18n.t('common.validationError'), i18n.t('users.validation.emailRequired'));
             return;
         }
         if (!editingUser && !password) {
-            Alert.alert('Validation Error', 'Password is required for new users.');
+            Alert.alert(i18n.t('common.validationError'), i18n.t('users.validation.passwordRequired'));
             return;
         }
 
@@ -123,15 +124,15 @@ export default function UsersScreen() {
         try {
             if (editingUser) {
                 await updateUser(editingUser.id, { name, email, role });
-                Alert.alert('Success', 'User updated successfully');
+                Alert.alert(i18n.t('common.success'), i18n.t('users.updated'));
             } else {
                 await createUser({ email, password, name, role });
-                Alert.alert('Success', 'User created successfully');
+                Alert.alert(i18n.t('common.success'), i18n.t('users.created'));
             }
             closeModal();
             fetchUsers();
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Operation failed');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('common.operationFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -152,7 +153,7 @@ export default function UsersScreen() {
             setUserToDelete(null);
             closeModal();
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to delete user');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('users.deleteFailed'));
         }
     };
 
@@ -160,7 +161,7 @@ export default function UsersScreen() {
         <TouchableOpacity onPress={() => openModal(item)}>
             <ThemedView style={[styles.userCard, { borderColor: theme.neutral + '20' }]}>
                 <View style={styles.userInfo}>
-                    <ThemedText style={styles.userName}>{item.name || 'Unknown Name'}</ThemedText>
+                    <ThemedText style={styles.userName}>{item.name || i18n.t('common.unknown')}</ThemedText>
                     <ThemedText style={styles.userEmail}>{item.email}</ThemedText>
                     <View style={[styles.roleBadge, { backgroundColor: theme.primary + '20' }]}>
                         <ThemedText style={[styles.roleText, { color: theme.primary }]}>
@@ -176,8 +177,8 @@ export default function UsersScreen() {
     return (
         <ThemedView style={styles.container}>
             <View style={styles.header}>
-                <ThemedText type="title">Users</ThemedText>
-                <ThemedText style={styles.subtitle}>Manage platform users and roles</ThemedText>
+                <ThemedText type="title">{i18n.t('users.title')}</ThemedText>
+                <ThemedText style={styles.subtitle}>{i18n.t('users.subtitle')}</ThemedText>
             </View>
 
             {loading ? (
@@ -196,7 +197,7 @@ export default function UsersScreen() {
                     }
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <ThemedText>No users found.</ThemedText>
+                            <ThemedText>{i18n.t('users.noUsers')}</ThemedText>
                         </View>
                     }
                 />
@@ -225,7 +226,7 @@ export default function UsersScreen() {
                         borderColor: theme.neutral + '20'
                     }]}>
                         <View style={styles.modalHeader}>
-                            <ThemedText type="subtitle">{editingUser ? 'Edit User' : 'Add New User'}</ThemedText>
+                            <ThemedText type="subtitle">{editingUser ? i18n.t('users.editUser') : i18n.t('users.addUser')}</ThemedText>
                             <TouchableOpacity onPress={closeModal}>
                                 <IconSymbol name="xmark" size={24} color={theme.icon} />
                             </TouchableOpacity>
@@ -233,23 +234,23 @@ export default function UsersScreen() {
 
                         <ScrollView style={styles.formScroll}>
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Name</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('users.name')}</ThemedText>
                                 <TextInput
                                     style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
                                     value={name}
                                     onChangeText={setName}
-                                    placeholder="Full Name"
+                                    placeholder={i18n.t('users.namePlaceholder')}
                                     placeholderTextColor={theme.icon + '80'}
                                 />
                             </View>
 
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Email *</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('users.email')} *</ThemedText>
                                 <TextInput
                                     style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
                                     value={email}
                                     onChangeText={setEmail}
-                                    placeholder="email@example.com"
+                                    placeholder={i18n.t('users.emailPlaceholder')}
                                     placeholderTextColor={theme.icon + '80'}
                                     keyboardType="email-address"
                                     autoCapitalize="none"
@@ -258,12 +259,12 @@ export default function UsersScreen() {
 
                             {!editingUser && (
                                 <View style={styles.formGroup}>
-                                    <ThemedText style={styles.label}>Password *</ThemedText>
+                                    <ThemedText style={styles.label}>{i18n.t('users.password')} *</ThemedText>
                                     <TextInput
                                         style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
                                         value={password}
                                         onChangeText={setPassword}
-                                        placeholder="Password"
+                                        placeholder={i18n.t('users.password')}
                                         placeholderTextColor={theme.icon + '80'}
                                         secureTextEntry
                                     />
@@ -271,7 +272,7 @@ export default function UsersScreen() {
                             )}
 
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Role</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('users.role')}</ThemedText>
                                 <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
                                     {Platform.OS === 'web' ? (
                                         <select
@@ -309,7 +310,7 @@ export default function UsersScreen() {
                             onPress={handleSubmit}
                             disabled={submitting}
                         >
-                            <ThemedText style={styles.submitButtonText}>{submitting ? 'Saving...' : 'Save User'}</ThemedText>
+                            <ThemedText style={styles.submitButtonText}>{submitting ? i18n.t('common.saving') : i18n.t('users.saveUser')}</ThemedText>
                         </TouchableOpacity>
 
                         {editingUser && (
@@ -317,7 +318,7 @@ export default function UsersScreen() {
                                 style={[styles.deleteButton, { backgroundColor: '#ff4444' }]}
                                 onPress={() => handleDelete(editingUser)}
                             >
-                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete User</ThemedText>
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{i18n.t('users.deleteUser')}</ThemedText>
                             </TouchableOpacity>
                         )}
                     </ThemedView>
@@ -333,9 +334,9 @@ export default function UsersScreen() {
             >
                 <View style={styles.alertOverlay}>
                     <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
-                        <ThemedText type="subtitle" style={styles.alertTitle}>Delete User</ThemedText>
+                        <ThemedText type="subtitle" style={styles.alertTitle}>{i18n.t('users.deleteUser')}</ThemedText>
                         <ThemedText style={styles.alertMessage}>
-                            Are you sure you want to delete &quot;{userToDelete?.name || userToDelete?.email}&quot;? This action cannot be undone.
+                            {i18n.t('users.deleteConfirm', { name: userToDelete?.name || userToDelete?.email })}
                         </ThemedText>
 
                         <View style={styles.alertActions}>
@@ -343,13 +344,13 @@ export default function UsersScreen() {
                                 style={styles.alertButton}
                                 onPress={() => setDeleteModalVisible(false)}
                             >
-                                <ThemedText style={{ color: theme.text }}>Cancel</ThemedText>
+                                <ThemedText style={{ color: theme.text }}>{i18n.t('common.cancel')}</ThemedText>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.alertButton, { backgroundColor: '#ff4444' }]}
                                 onPress={confirmDelete}
                             >
-                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete</ThemedText>
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{i18n.t('common.delete')}</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </ThemedView>
@@ -363,7 +364,7 @@ export default function UsersScreen() {
                 onSelect={(value) => setRole(value as UserRole)}
                 options={manageableRoles.map(r => ({ label: ROLE_LABELS[r], value: r }))}
                 selectedValue={role}
-                title="Select Role"
+                title={i18n.t('users.selectRole')}
             />
         </ThemedView>
     );

@@ -15,6 +15,7 @@ import { DatePickerModal } from '@/components/DatePickerModal';
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import i18n from '@/i18n';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -101,7 +102,7 @@ export default function MyTasksScreen() {
             const data = await getMyTasks();
             setTasks(data);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to fetch tasks');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('tasks.fetchFailed'));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -195,7 +196,7 @@ export default function MyTasksScreen() {
                 setNewPhotos([...newPhotos, result.assets[0]]);
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to pick image');
+            Alert.alert(i18n.t('common.error'), 'Failed to pick image'); // Leaving as hardcoded or add to i18n? Added to common potentially or just hardcode as minor
         }
     };
 
@@ -225,7 +226,7 @@ export default function MyTasksScreen() {
 
     const handleSubmit = async () => {
         if (!title || !siteId) {
-            Alert.alert('Validation Error', 'Title and Site are required.');
+            Alert.alert(i18n.t('common.validationError'), i18n.t('tasks.validation.titleSiteRequired'));
             return;
         }
 
@@ -284,7 +285,7 @@ export default function MyTasksScreen() {
             closeModal();
             fetchTasks();
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Operation failed');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('common.operationFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -305,7 +306,7 @@ export default function MyTasksScreen() {
             setTaskToDelete(null);
             closeModal();
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to delete task');
+            Alert.alert(i18n.t('common.error'), error.message || 'Failed to delete task');
         }
     };
 
@@ -345,8 +346,8 @@ export default function MyTasksScreen() {
     return (
         <ThemedView style={styles.container}>
             <View style={styles.header}>
-                <ThemedText type="title">My Tasks</ThemedText>
-                <ThemedText style={styles.subtitle}>Tasks assigned specifically to you</ThemedText>
+                <ThemedText type="title">{i18n.t('tasks.title')}</ThemedText>
+                <ThemedText style={styles.subtitle}>{i18n.t('tasks.subtitle')}</ThemedText>
             </View>
 
             <FlatList
@@ -357,7 +358,7 @@ export default function MyTasksScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 ListEmptyComponent={
                     <View style={styles.center}>
-                        <ThemedText>No tasks assigned to you.</ThemedText>
+                        <ThemedText>{i18n.t('tasks.noTasks')}</ThemedText>
                     </View>
                 }
             />
@@ -385,7 +386,7 @@ export default function MyTasksScreen() {
                         borderColor: theme.neutral + '20'
                     }]}>
                         <View style={styles.modalHeader}>
-                            <ThemedText type="subtitle">{editingTask ? 'Edit Task' : 'Add New Task'}</ThemedText>
+                            <ThemedText type="subtitle">{editingTask ? i18n.t('tasks.editTask') : i18n.t('tasks.addTask')}</ThemedText>
                             <TouchableOpacity onPress={closeModal}>
                                 <IconSymbol name="xmark" size={24} color={theme.icon} />
                             </TouchableOpacity>
@@ -401,31 +402,31 @@ export default function MyTasksScreen() {
                                     >
                                         <ThemedText style={{ color: siteId ? theme.text : (theme.icon + '80') }}>
                                             {siteId && sites.length > 0
-                                                ? sites.find(s => s.id.toString() === siteId)?.name || 'Unknown Site'
-                                                : 'Select Site'}
+                                                ? sites.find(s => s.id.toString() === siteId)?.name || i18n.t('common.unknown')
+                                                : i18n.t('tasks.selectSite')}
                                         </ThemedText>
                                     </TouchableOpacity>
                                 </View>
                             </View>
 
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Title *</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('tasks.taskTitle')} *</ThemedText>
                                 <TextInput
                                     style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
                                     value={title}
                                     onChangeText={setTitle}
-                                    placeholder="Task Title"
+                                    placeholder={i18n.t('tasks.taskTitlePlaceholder')}
                                     placeholderTextColor={theme.icon + '80'}
                                 />
                             </View>
 
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Description</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('tasks.description')}</ThemedText>
                                 <TextInput
                                     style={[styles.textArea, { color: theme.text, borderColor: theme.neutral + '40' }]}
                                     value={description}
                                     onChangeText={setDescription}
-                                    placeholder="Task Description"
+                                    placeholder={i18n.t('tasks.descriptionPlaceholder')}
                                     placeholderTextColor={theme.icon + '80'}
                                     multiline
                                     numberOfLines={4}
@@ -434,21 +435,21 @@ export default function MyTasksScreen() {
 
                             <View style={styles.formRow}>
                                 <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                                    <ThemedText style={styles.label}>Status</ThemedText>
+                                    <ThemedText style={styles.label}>{i18n.t('tasks.status')}</ThemedText>
                                     <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
                                         <TouchableOpacity
                                             style={{ width: '100%', height: '100%', justifyContent: 'center' }}
                                             onPress={() => setStatusPickerVisible(true)}
                                         >
                                             <ThemedText style={{ color: theme.text }}>
-                                                {status === 'TODO' ? 'To Do' : status === 'IN_PROGRESS' ? 'In Progress' : 'Done'}
+                                                {status === 'TODO' ? i18n.t('tasks.statusOptions.todo') : status === 'IN_PROGRESS' ? i18n.t('tasks.statusOptions.inProgress') : i18n.t('tasks.statusOptions.done')}
                                             </ThemedText>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
 
                                 <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                                    <ThemedText style={styles.label}>Priority</ThemedText>
+                                    <ThemedText style={styles.label}>{i18n.t('tasks.priority')}</ThemedText>
                                     <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
                                         <TouchableOpacity
                                             style={{ width: '100%', height: '100%', justifyContent: 'center' }}
@@ -464,25 +465,25 @@ export default function MyTasksScreen() {
 
 
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Due Date</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('tasks.dueDate')}</ThemedText>
                                 <View style={[styles.picker, { borderColor: theme.neutral + '40', padding: 0 }]}>
                                     <TouchableOpacity
                                         style={{ width: '100%', height: '100%', justifyContent: 'center', paddingHorizontal: 16 }}
                                         onPress={() => setDatePickerVisible(true)}
                                     >
                                         <ThemedText style={{ color: dueDate ? theme.text : (theme.icon + '80') }}>
-                                            {dueDate || 'Select Date'}
+                                            {dueDate || i18n.t('common.selectDate')}
                                         </ThemedText>
                                     </TouchableOpacity>
                                 </View>
                             </View>
 
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Assignee</ThemedText>
-                                <ThemedText style={{ opacity: 0.6 }}>Assigned to you ({user?.name})</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('tasks.assignee')}</ThemedText>
+                                <ThemedText style={{ opacity: 0.6 }}>{i18n.t('tasks.assignedToYou')} ({user?.name})</ThemedText>
                             </View>
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Location</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('common.location')}</ThemedText>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                     <TouchableOpacity
                                         style={[
@@ -497,7 +498,7 @@ export default function MyTasksScreen() {
                                     >
                                         <IconSymbol name="map" size={20} color={theme.primary} />
                                         <ThemedText style={{ color: theme.primary, fontWeight: '600' }}>
-                                            {taskLatitude && taskLongitude ? 'Change Location' : 'Set Location'}
+                                            {taskLatitude && taskLongitude ? i18n.t('common.changeLocation') : i18n.t('common.setLocation')}
                                         </ThemedText>
                                     </TouchableOpacity>
                                     {taskLatitude && taskLongitude && (
@@ -508,13 +509,13 @@ export default function MyTasksScreen() {
                                 </View>
                                 {!siteId && (
                                     <ThemedText style={{ fontSize: 12, color: theme.danger, marginTop: 4 }}>
-                                        Select a site first to set location.
+                                        {i18n.t('tasks.validation.locationRequired')}
                                     </ThemedText>
                                 )}
                             </View>
 
                             <View style={styles.formGroup}>
-                                <ThemedText style={styles.label}>Photos</ThemedText>
+                                <ThemedText style={styles.label}>{i18n.t('tasks.photos')}</ThemedText>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 10 }}>
                                     {/* Existing Photos */}
                                     {existingPhotos.map(photo => (
@@ -576,7 +577,7 @@ export default function MyTasksScreen() {
                                         onPress={handlePickImage}
                                     >
                                         <IconSymbol name="plus" size={24} color={theme.icon} />
-                                        <ThemedText style={{ fontSize: 10, marginTop: 4 }}>Add</ThemedText>
+                                        <ThemedText style={{ fontSize: 10, marginTop: 4 }}>{i18n.t('common.add')}</ThemedText>
                                     </TouchableOpacity>
                                 </ScrollView>
                             </View>
@@ -587,7 +588,7 @@ export default function MyTasksScreen() {
                             onPress={handleSubmit}
                             disabled={submitting}
                         >
-                            <ThemedText style={styles.submitButtonText}>{submitting ? 'Saving...' : 'Save Task'}</ThemedText>
+                            <ThemedText style={styles.submitButtonText}>{submitting ? i18n.t('common.saving') : i18n.t('tasks.saveTask')}</ThemedText>
                         </TouchableOpacity>
 
                         {editingTask && (
@@ -595,7 +596,7 @@ export default function MyTasksScreen() {
                                 style={[styles.deleteButton, { backgroundColor: '#ff4444', borderColor: '#ff4444' }]}
                                 onPress={() => handleDelete(editingTask)}
                             >
-                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete Task</ThemedText>
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{i18n.t('tasks.deleteTask')}</ThemedText>
                             </TouchableOpacity>
                         )}
                     </ThemedView>
@@ -624,9 +625,9 @@ export default function MyTasksScreen() {
             >
                 <View style={styles.alertOverlay}>
                     <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
-                        <ThemedText type="subtitle" style={styles.alertTitle}>Delete Task</ThemedText>
+                        <ThemedText type="subtitle" style={styles.alertTitle}>{i18n.t('tasks.deleteTask')}</ThemedText>
                         <ThemedText style={styles.alertMessage}>
-                            Are you sure you want to delete &quot;{taskToDelete?.title}&quot;? This action cannot be undone.
+                            {i18n.t('tasks.deleteConfirm', { title: taskToDelete?.title })}
                         </ThemedText>
 
                         <View style={styles.alertActions}>
@@ -634,13 +635,13 @@ export default function MyTasksScreen() {
                                 style={styles.alertButton}
                                 onPress={() => setDeleteModalVisible(false)}
                             >
-                                <ThemedText style={{ color: theme.text }}>Cancel</ThemedText>
+                                <ThemedText style={{ color: theme.text }}>{i18n.t('common.cancel')}</ThemedText>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.alertButton, { backgroundColor: '#ff4444' }]}
                                 onPress={confirmDelete}
                             >
-                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete</ThemedText>
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{i18n.t('common.delete')}</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </ThemedView>
@@ -653,11 +654,11 @@ export default function MyTasksScreen() {
                 onClose={() => setSitePickerVisible(false)}
                 onSelect={(value) => handleSiteChange(value)}
                 options={[
-                    { label: 'Select Site', value: '' },
+                    { label: i18n.t('tasks.selectSite'), value: '' },
                     ...sites.map(s => ({ label: s.name, value: String(s.id) }))
                 ]}
                 selectedValue={siteId}
-                title="Select Site"
+                title={i18n.t('tasks.selectSite')}
             />
 
             <SelectModal
@@ -665,12 +666,12 @@ export default function MyTasksScreen() {
                 onClose={() => setStatusPickerVisible(false)}
                 onSelect={setStatus}
                 options={[
-                    { label: 'To Do', value: 'TODO' },
-                    { label: 'In Progress', value: 'IN_PROGRESS' },
-                    { label: 'Done', value: 'DONE' },
+                    { label: i18n.t('tasks.statusOptions.todo'), value: 'TODO' },
+                    { label: i18n.t('tasks.statusOptions.inProgress'), value: 'IN_PROGRESS' },
+                    { label: i18n.t('tasks.statusOptions.done'), value: 'DONE' },
                 ]}
                 selectedValue={status}
-                title="Select Status"
+                title={i18n.t('tasks.selectStatus')}
             />
 
             <SelectModal
@@ -682,7 +683,7 @@ export default function MyTasksScreen() {
                     value: p
                 }))}
                 selectedValue={priority}
-                title="Select Priority"
+                title={i18n.t('tasks.selectPriority')}
             />
 
             <DatePickerModal
@@ -690,7 +691,7 @@ export default function MyTasksScreen() {
                 onClose={() => setDatePickerVisible(false)}
                 onSelect={setDueDate}
                 selectedDate={dueDate}
-                title="Select Due Date"
+                title={i18n.t('tasks.selectDueDate')}
             />
         </ThemedView >
     );

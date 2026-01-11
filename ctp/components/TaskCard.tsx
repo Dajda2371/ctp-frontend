@@ -10,6 +10,7 @@ import { LocationPicker } from '@/components/LocationPicker';
 import { PhotoGalleryModal } from '@/components/PhotoGalleryModal';
 import { TaskPhotoItem } from '@/components/TaskPhotoItem';
 import { deleteTaskPhoto, uploadTaskPhoto, getTaskPhotos } from '@/constants/api';
+import i18n from '@/i18n';
 
 // Define Task Interface locally if not exported, or better, import from central types
 // For now, mirroring the structure
@@ -107,7 +108,7 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
             setGalleryVisible(true);
         } catch (error) {
             console.error("Failed to fetch photos", error);
-            Alert.alert("Error", "Could not load photos.");
+            Alert.alert(i18n.t('common.error'), i18n.t('tasks.fetchFailed')); // Or a specific photo error
         } finally {
             setLoadingPhotos(false);
         }
@@ -139,10 +140,10 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
                 const data = await getTaskPhotos(task.id);
                 setDetailedPhotos(data.photos || []);
             }
-            Alert.alert("Success", "Photo updated successfully.");
+            Alert.alert(i18n.t('common.success'), "Photo updated successfully."); // Add to i18n if needed
         } catch (error) {
             console.error("Failed to update photo", error);
-            Alert.alert("Error", "Failed to update photo.");
+            Alert.alert(i18n.t('common.error'), "Failed to update photo.");
         } finally {
             setSavingPhoto(false);
             setGalleryVisible(false);
@@ -162,14 +163,14 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
                     <TouchableOpacity onPress={onStatusPress} disabled={!onStatusPress}>
                         <View style={[styles.badge, { backgroundColor: getStatusColor(task.status) + '20' }]}>
                             <ThemedText style={[styles.badgeText, { color: getStatusColor(task.status) }]}>
-                                {task.status.replace('_', ' ')}
+                                {task.status === 'TODO' ? i18n.t('tasks.statusOptions.todo') : task.status === 'IN_PROGRESS' ? i18n.t('tasks.statusOptions.inProgress') : i18n.t('tasks.statusOptions.done')}
                             </ThemedText>
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={onPriorityPress} disabled={!onPriorityPress}>
                         <View style={[styles.badge, { backgroundColor: getPriorityColor(task.priority) + '20' }]}>
                             <ThemedText style={[styles.badgeText, { color: getPriorityColor(task.priority) }]}>
-                                {REVERSE_PRIORITY_MAP[task.priority] || 'MEDIUM'}
+                                {i18n.t(`tasks.priorityOptions.${REVERSE_PRIORITY_MAP[task.priority]?.toLowerCase() || 'medium'}`)}
                             </ThemedText>
                         </View>
                     </TouchableOpacity>

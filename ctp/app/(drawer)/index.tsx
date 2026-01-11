@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getSites, getUsers } from '@/constants/api'; // Import API call
 import { Site } from '@/components/SiteCard'; // Use Site type with manager names
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import i18n from '@/i18n';
 
 interface User {
     id: number;
@@ -43,7 +44,7 @@ export default function SitesScreen() {
             setSites(enrichedSites);
         } catch (error: any) {
             console.error(error);
-            // Optional: Alert.alert('Error', 'Failed to fetch sites');
+            // Optional: Alert.alert(i18n.t('common.error'), i18n.t('sites.fetchFailed'));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -81,11 +82,11 @@ export default function SitesScreen() {
                 <View style={styles.managerRow}>
                     <View style={styles.managerInfo}>
                         <IconSymbol name="wrench.fill" size={12} color={theme.icon} />
-                        <ThemedText style={styles.footerText}>FM: {item.facility_manager_name || 'Unassigned'}</ThemedText>
+                        <ThemedText style={styles.footerText}>FM: {item.facility_manager_name || i18n.t('common.unassigned')}</ThemedText>
                     </View>
                     <View style={[styles.managerInfo, { marginLeft: 16 }]}>
                         <IconSymbol name="house.fill" size={12} color={theme.icon} />
-                        <ThemedText style={styles.footerText}>PM: {item.property_manager_name || 'Unassigned'}</ThemedText>
+                        <ThemedText style={styles.footerText}>PM: {item.property_manager_name || i18n.t('common.unassigned')}</ThemedText>
                     </View>
                 </View>
             </View>
@@ -95,8 +96,8 @@ export default function SitesScreen() {
     return (
         <ThemedView style={styles.container}>
             <View style={[styles.header, { backgroundColor: theme.secondary }]}>
-                <ThemedText type="title" style={styles.headerTitle}>Sites</ThemedText>
-                <ThemedText style={styles.headerSubtitle}>Manage buildings and technical tasks</ThemedText>
+                <ThemedText type="title" style={styles.headerTitle}>{i18n.t('sites.title')}</ThemedText>
+                <ThemedText style={styles.headerSubtitle}>{i18n.t('sites.subtitle')}</ThemedText>
             </View>
 
             {loading ? (
@@ -115,7 +116,7 @@ export default function SitesScreen() {
                     }
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <ThemedText>No sites found.</ThemedText>
+                            <ThemedText>{i18n.t('sites.noSites')}</ThemedText>
                         </View>
                     }
                 />

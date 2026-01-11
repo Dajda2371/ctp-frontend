@@ -8,6 +8,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { login } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
+import i18n from '@/i18n';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -22,7 +23,7 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password.');
+            Alert.alert(i18n.t('login.error'), i18n.t('login.missingFields'));
             return;
         }
 
@@ -39,7 +40,7 @@ export default function LoginScreen() {
             }
         } catch (error: any) {
             setLoading(false);
-            Alert.alert('Login Failed', error.message || 'Something went wrong. Please try again.');
+            Alert.alert(i18n.t('login.failed'), error.message || i18n.t('common.somethingWentWrong'));
         }
     };
 
@@ -54,13 +55,13 @@ export default function LoginScreen() {
                         <View style={[styles.logoContainer, { backgroundColor: theme.primary }]}>
                             <ThemedText style={styles.logoText}>CTP</ThemedText>
                         </View>
-                        <ThemedText type="title" style={styles.title}>Welcome Back</ThemedText>
-                        <ThemedText style={styles.subtitle}>Sign in to manage your sites and tasks</ThemedText>
+                        <ThemedText type="title" style={styles.title}>{i18n.t('login.welcomeBack')}</ThemedText>
+                        <ThemedText style={styles.subtitle}>{i18n.t('login.subtitle')}</ThemedText>
                     </View>
 
                     <View style={styles.form}>
                         <View style={styles.inputGroup}>
-                            <ThemedText style={styles.label}>Email Address</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('login.email')}</ThemedText>
                             <TextInput
                                 style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
                                 placeholder="email@ctp.eu"
@@ -73,7 +74,7 @@ export default function LoginScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <ThemedText style={styles.label}>Password</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('login.password')}</ThemedText>
                             <TextInput
                                 style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
                                 placeholder="••••••••"
@@ -93,7 +94,7 @@ export default function LoginScreen() {
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <ThemedText style={styles.loginBtnText}>Sign In</ThemedText>
+                                <ThemedText style={styles.loginBtnText}>{i18n.t('login.signIn')}</ThemedText>
                             )}
                         </TouchableOpacity>
 

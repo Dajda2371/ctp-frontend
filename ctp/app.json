@@ -58,7 +58,8 @@
           "savePhotosPermission": "Allow CTP to save edited images to your gallery.",
           "isAccessMediaLocationEnabled": true
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -7,41 +7,43 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { register } from '@/constants/api';
+import i18n from '@/i18n';
 
 export default function RegisterScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleRegister = async () => {
-        if (!email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields.');
+        if (!name || !email || !password || !confirmPassword) {
+            Alert.alert(i18n.t('register.error'), i18n.t('register.missingFields'));
             return;
         }
 
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match.');
+            Alert.alert(i18n.t('register.error'), i18n.t('register.passwordMismatch'));
             return;
         }
 
         setLoading(true);
         try {
-            await register(email, password);
+            await register(email, password, name);
             // Assuming direct login or navigation to login after success.
             // The implementation plan mentioned navigating to home or login. 
             // "login.tsx navigates to `/` (Home) on success. I'll do the same for register."
             setLoading(false);
-            Alert.alert('Success', 'Account created successfully!', [
-                { text: 'OK', onPress: () => router.replace('/') }
+            Alert.alert(i18n.t('register.success'), i18n.t('register.accountCreated'), [
+                { text: i18n.t('common.ok'), onPress: () => router.replace('/') }
             ]);
         } catch (error: any) {
             setLoading(false);
-            Alert.alert('Registration Failed', error.message || 'Something went wrong. Please try again.');
+            Alert.alert(i18n.t('register.failed'), error.message || i18n.t('common.somethingWentWrong'));
         }
     };
 
@@ -56,13 +58,25 @@ export default function RegisterScreen() {
                         <View style={[styles.logoContainer, { backgroundColor: theme.primary }]}>
                             <ThemedText style={styles.logoText}>CTP</ThemedText>
                         </View>
-                        <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
-                        <ThemedText style={styles.subtitle}>Sign up to get started</ThemedText>
+                        <ThemedText type="title" style={styles.title}>{i18n.t('register.createAccount')}</ThemedText>
+                        <ThemedText style={styles.subtitle}>{i18n.t('register.subtitle')}</ThemedText>
                     </View>
 
                     <View style={styles.form}>
                         <View style={styles.inputGroup}>
-                            <ThemedText style={styles.label}>Email Address</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('users.name')}</ThemedText>
+                            <TextInput
+                                style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
+                                placeholder={i18n.t('users.namePlaceholder')}
+                                placeholderTextColor={theme.icon + '80'}
+                                value={name}
+                                onChangeText={setName}
+                                autoCapitalize="words"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.label}>{i18n.t('login.email')}</ThemedText>
                             <TextInput
                                 style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
                                 placeholder="email@ctp.eu"
@@ -75,7 +89,7 @@ export default function RegisterScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <ThemedText style={styles.label}>Password</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('login.password')}</ThemedText>
                             <TextInput
                                 style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
                                 placeholder="••••••••"
@@ -87,7 +101,7 @@ export default function RegisterScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <ThemedText style={styles.label}>Confirm Password</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('register.confirmPassword')}</ThemedText>
                             <TextInput
                                 style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
                                 placeholder="••••••••"
@@ -106,14 +120,14 @@ export default function RegisterScreen() {
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <ThemedText style={styles.loginBtnText}>Sign Up</ThemedText>
+                                <ThemedText style={styles.loginBtnText}>{i18n.t('register.signUp')}</ThemedText>
                             )}
                         </TouchableOpacity>
 
                         <View style={styles.footer}>
-                            <ThemedText style={styles.footerText}>Already have an account? </ThemedText>
+                            <ThemedText style={styles.footerText}>{i18n.t('register.alreadyHaveAccount')} </ThemedText>
                             <TouchableOpacity onPress={() => router.back()}>
-                                <ThemedText style={[styles.linkText, { color: theme.primary }]}>Sign In</ThemedText>
+                                <ThemedText style={[styles.linkText, { color: theme.primary }]}>{i18n.t('login.signIn')}</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </View>

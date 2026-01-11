@@ -16,6 +16,7 @@ import { Linking } from 'react-native';
 import { SiteCard, Site } from '@/components/SiteCard';
 import { SelectModal } from '@/components/SelectModal';
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import i18n from '@/i18n';
 
 
 
@@ -77,7 +78,7 @@ export default function ManageSitesScreen() {
             setFacilityManagers(facilityManagersData);
             setPropertyManagers(propertyManagersData);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to fetch data');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('sites.fetchFailed'));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -130,7 +131,7 @@ export default function ManageSitesScreen() {
 
     const handleSubmit = async () => {
         if (!name || !address) {
-            Alert.alert('Validation Error', 'Name and Address are required.');
+            Alert.alert(i18n.t('common.validationError'), i18n.t('manageSites.validation.nameAddressRequired'));
             return;
         }
 
@@ -152,16 +153,16 @@ export default function ManageSitesScreen() {
                 };
                 await updateSite(editingSite.id, siteData);
                 siteId = editingSite.id;
-                Alert.alert('Success', 'Site updated successfully');
+                Alert.alert(i18n.t('common.success'), i18n.t('manageSites.updated'));
             } else {
                 // For create, coordinates and both managers are required
                 if (siteLatitude === undefined || siteLongitude === undefined) {
-                    Alert.alert('Validation Error', 'Location (coordinates) is required.');
+                    Alert.alert(i18n.t('common.validationError'), i18n.t('manageSites.validation.locationRequired'));
                     setSubmitting(false);
                     return;
                 }
                 if (!fmId || !pmId) {
-                    Alert.alert('Validation Error', 'Both Facility and Property managers are required.');
+                    Alert.alert(i18n.t('common.validationError'), i18n.t('manageSites.validation.managersRequired'));
                     setSubmitting(false);
                     return;
                 }
@@ -175,13 +176,13 @@ export default function ManageSitesScreen() {
                 };
                 const newSite = await createSite(siteData);
                 siteId = newSite.id;
-                Alert.alert('Success', 'Site created successfully');
+                Alert.alert(i18n.t('common.success'), i18n.t('manageSites.created'));
             }
 
             closeModal();
             fetchSites();
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Operation failed');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('common.operationFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -202,14 +203,14 @@ export default function ManageSitesScreen() {
             setSiteToDelete(null);
             closeModal(); // Close the edit modal as well
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to delete site');
+            Alert.alert(i18n.t('common.error'), error.message || i18n.t('manageSites.deleteFailed'));
         }
     };
 
     if (!canManageSites(user?.role)) {
         return (
             <ThemedView style={styles.center}>
-                <ThemedText>You do not have permission to view this page.</ThemedText>
+                <ThemedText>{i18n.t('manageSites.permissionDenied')}</ThemedText>
             </ThemedView>
         );
     }
@@ -223,8 +224,8 @@ export default function ManageSitesScreen() {
             <Stack.Screen options={{ title: 'Manage Sites', headerShown: true }} />
 
             <View style={styles.header}>
-                <ThemedText type="title">Manage Sites</ThemedText>
-                <ThemedText style={styles.subtitle}>Add, edit, or remove sites</ThemedText>
+                <ThemedText type="title">{i18n.t('manageSites.title')}</ThemedText>
+                <ThemedText style={styles.subtitle}>{i18n.t('manageSites.subtitle')}</ThemedText>
             </View>
 
             <FlatList
@@ -235,7 +236,7 @@ export default function ManageSitesScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 ListEmptyComponent={
                     <View style={styles.center}>
-                        <ThemedText>No sites found.</ThemedText>
+                        <ThemedText>{i18n.t('sites.noSites')}</ThemedText>
                     </View>
                 }
             />
@@ -262,36 +263,36 @@ export default function ManageSitesScreen() {
                         borderColor: theme.neutral + '20'
                     }]}>
                         <View style={styles.modalHeader}>
-                            <ThemedText type="subtitle">{editingSite ? 'Edit Site' : 'Add New Site'}</ThemedText>
+                            <ThemedText type="subtitle">{editingSite ? i18n.t('manageSites.editSite') : i18n.t('manageSites.addSite')}</ThemedText>
                             <TouchableOpacity onPress={closeModal}>
                                 <IconSymbol name="xmark" size={24} color={theme.icon} />
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Name</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('manageSites.name')}</ThemedText>
                             <TextInput
                                 style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
                                 value={name}
                                 onChangeText={setName}
-                                placeholder="Site Name"
+                                placeholder={i18n.t('manageSites.namePlaceholder')}
                                 placeholderTextColor={theme.icon + '80'}
                             />
                         </View>
 
                         <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Address</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('manageSites.address')}</ThemedText>
                             <TextInput
                                 style={[styles.input, { color: theme.text, borderColor: theme.neutral + '40' }]}
                                 value={address}
                                 onChangeText={setAddress}
-                                placeholder="Site Address"
+                                placeholder={i18n.t('manageSites.addressPlaceholder')}
                                 placeholderTextColor={theme.icon + '80'}
                             />
                         </View>
 
                         <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Facility Manager</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('manageSites.facilityManager')}</ThemedText>
                             <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
                                 {Platform.OS === 'web' ? (
                                     <select
@@ -306,7 +307,7 @@ export default function ManageSitesScreen() {
                                             fontSize: 16,
                                         }}
                                     >
-                                        <option value="">None</option>
+                                        <option value="">{i18n.t('common.none')}</option>
                                         {facilityManagers.map(u => (
                                             <option key={u.id} value={u.id.toString()}>{u.name}</option>
                                         ))}
@@ -317,7 +318,7 @@ export default function ManageSitesScreen() {
                                         onPress={() => setFmPickerVisible(true)}
                                     >
                                         <ThemedText style={{ color: selectedFacilityManager ? theme.text : (theme.icon + '80') }}>
-                                            {facilityManagers.find(u => u.id.toString() === selectedFacilityManager)?.name || 'Select Manager'}
+                                            {facilityManagers.find(u => u.id.toString() === selectedFacilityManager)?.name || i18n.t('manageSites.selectManager')}
                                         </ThemedText>
                                     </TouchableOpacity>
                                 )}
@@ -325,7 +326,7 @@ export default function ManageSitesScreen() {
                         </View>
 
                         <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Property Manager</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('manageSites.propertyManager')}</ThemedText>
                             <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
                                 {Platform.OS === 'web' ? (
                                     <select
@@ -340,7 +341,7 @@ export default function ManageSitesScreen() {
                                             fontSize: 16,
                                         }}
                                     >
-                                        <option value="">None</option>
+                                        <option value="">{i18n.t('common.none')}</option>
                                         {propertyManagers.map(u => (
                                             <option key={u.id} value={u.id.toString()}>{u.name}</option>
                                         ))}
@@ -351,7 +352,7 @@ export default function ManageSitesScreen() {
                                         onPress={() => setPmPickerVisible(true)}
                                     >
                                         <ThemedText style={{ color: selectedPropertyManager ? theme.text : (theme.icon + '80') }}>
-                                            {propertyManagers.find(u => u.id.toString() === selectedPropertyManager)?.name || 'Select Manager'}
+                                            {propertyManagers.find(u => u.id.toString() === selectedPropertyManager)?.name || i18n.t('manageSites.selectManager')}
                                         </ThemedText>
                                     </TouchableOpacity>
                                 )}
@@ -359,7 +360,7 @@ export default function ManageSitesScreen() {
                         </View>
 
                         <View style={styles.formGroup}>
-                            <ThemedText style={styles.label}>Location</ThemedText>
+                            <ThemedText style={styles.label}>{i18n.t('common.location')}</ThemedText>
                             {siteLatitude && siteLongitude ? (
                                 <View style={styles.locationRow}>
                                     <TouchableOpacity onPress={() => setLocationPickerVisible(true)} style={{ flex: 1 }}>
@@ -385,7 +386,7 @@ export default function ManageSitesScreen() {
                                 >
                                     <IconSymbol name="map" size={20} color={theme.primary} />
                                     <ThemedText style={{ color: theme.primary, fontWeight: '600' }}>
-                                        Set Location
+                                        {i18n.t('common.setLocation')}
                                     </ThemedText>
                                 </TouchableOpacity>
                             )}
@@ -396,7 +397,7 @@ export default function ManageSitesScreen() {
                             onPress={handleSubmit}
                             disabled={submitting}
                         >
-                            <ThemedText style={styles.submitButtonText}>{submitting ? 'Saving...' : 'Save Site'}</ThemedText>
+                            <ThemedText style={styles.submitButtonText}>{submitting ? i18n.t('common.saving') : i18n.t('manageSites.saveSite')}</ThemedText>
                         </TouchableOpacity>
 
                         {editingSite && (
@@ -404,7 +405,7 @@ export default function ManageSitesScreen() {
                                 style={[styles.deleteButton, { backgroundColor: '#ff4444', borderColor: '#ff4444' }]}
                                 onPress={() => handleDelete(editingSite)}
                             >
-                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete Site</ThemedText>
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{i18n.t('manageSites.deleteSite')}</ThemedText>
                             </TouchableOpacity>
                         )}
                     </ThemedView>
@@ -431,9 +432,9 @@ export default function ManageSitesScreen() {
             >
                 <View style={styles.alertOverlay}>
                     <ThemedView style={[styles.alertContent, { backgroundColor: theme.background, borderColor: theme.neutral + '20' }]}>
-                        <ThemedText type="subtitle" style={styles.alertTitle}>Delete Site</ThemedText>
+                        <ThemedText type="subtitle" style={styles.alertTitle}>{i18n.t('manageSites.deleteSite')}</ThemedText>
                         <ThemedText style={styles.alertMessage}>
-                            Are you sure you want to delete &quot;{siteToDelete?.name}&quot;? This action cannot be undone.
+                            {i18n.t('manageSites.deleteConfirm', { name: siteToDelete?.name })}
                         </ThemedText>
 
                         <View style={styles.alertActions}>
@@ -441,13 +442,13 @@ export default function ManageSitesScreen() {
                                 style={styles.alertButton}
                                 onPress={() => setDeleteModalVisible(false)}
                             >
-                                <ThemedText style={{ color: theme.text }}>Cancel</ThemedText>
+                                <ThemedText style={{ color: theme.text }}>{i18n.t('common.cancel')}</ThemedText>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.alertButton, { backgroundColor: '#ff4444' }]}
                                 onPress={confirmDelete}
                             >
-                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>Delete</ThemedText>
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{i18n.t('common.delete')}</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </ThemedView>
@@ -460,11 +461,11 @@ export default function ManageSitesScreen() {
                 onClose={() => setFmPickerVisible(false)}
                 onSelect={setSelectedFacilityManager}
                 options={[
-                    { label: 'None', value: '' },
+                    { label: i18n.t('common.none'), value: '' },
                     ...facilityManagers.map(u => ({ label: u.name, value: u.id.toString() }))
                 ]}
                 selectedValue={selectedFacilityManager}
-                title="Select Facility Manager"
+                title={i18n.t('manageSites.selectFm')}
             />
 
             <SelectModal
@@ -472,11 +473,11 @@ export default function ManageSitesScreen() {
                 onClose={() => setPmPickerVisible(false)}
                 onSelect={setSelectedPropertyManager}
                 options={[
-                    { label: 'None', value: '' },
+                    { label: i18n.t('common.none'), value: '' },
                     ...propertyManagers.map(u => ({ label: u.name, value: u.id.toString() }))
                 ]}
                 selectedValue={selectedPropertyManager}
-                title="Select Property Manager"
+                title={i18n.t('manageSites.selectPm')}
             />
         </ThemedView>
     );

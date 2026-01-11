@@ -7,6 +7,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getAddressFromCoordinates } from '@/utils/geocoding';
 import { LocationPicker } from '@/components/LocationPicker';
+import i18n from '@/i18n';
 
 export interface Site {
     id: number;
@@ -62,11 +63,11 @@ export function SiteCard({ site, onEdit }: SiteCardProps) {
                 <ThemedText style={styles.cardSubtitle}>{site.address}</ThemedText>
                 <View style={styles.managerInfo}>
                     <IconSymbol name="wrench.fill" size={12} color={theme.icon} />
-                    <ThemedText style={styles.cardDetail}>FM: {site.facility_manager_name || 'None'}</ThemedText>
+                    <ThemedText style={styles.cardDetail}>FM: {site.facility_manager_name || i18n.t('common.none')}</ThemedText>
                 </View>
                 <View style={styles.managerInfo}>
                     <IconSymbol name="house.fill" size={12} color={theme.icon} />
-                    <ThemedText style={styles.cardDetail}>PM: {site.property_manager_name || 'None'}</ThemedText>
+                    <ThemedText style={styles.cardDetail}>PM: {site.property_manager_name || i18n.t('common.none')}</ThemedText>
                 </View>
 
                 {/* Location Row */}
