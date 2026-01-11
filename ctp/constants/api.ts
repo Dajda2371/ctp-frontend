@@ -22,59 +22,14 @@ export async function login(email: string, password: string) {
     }
 }
 
-export async function logout() {
-    const token = await getToken();
-    try {
-        await fetch(`${API_BASE_URL}/auth/logout`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        // We don't check for response.ok because we want to clear client session regardless
-    } catch (error) {
-        console.error('Logout API error:', error);
-        // Continue to clear local session
-    }
-}
-
-
-export async function getMe() {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            // check for 401 unauth
-            if (response.status === 401) {
-                // handle token expiration if needed, for now just throw
-            }
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch user profile');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('getMe API error:', error);
-        throw error;
-    }
-}
-
-export async function register(email: string, password: string) {
+export async function register(email: string, password: string, full_name: string) {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, full_name }),
         });
 
         if (!response.ok) {
@@ -89,38 +44,42 @@ export async function register(email: string, password: string) {
     }
 }
 
+// Store and retrieve token
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+
+const TOKEN_KEY = 'auth_token';
 
 export async function saveToken(token: string) {
     if (Platform.OS === 'web') {
-        try {
-            localStorage.setItem('access_token', token);
-        } catch (e) {
-            console.error('Local storage is not available:', e);
-        }
+        localStorage.setItem(TOKEN_KEY, token);
     } else {
-        await SecureStore.setItemAsync('access_token', token);
+        await SecureStore.setItemAsync(TOKEN_KEY, token);
     }
 }
 
-export async function getToken() {
+export async function getToken(): Promise<string | null> {
     if (Platform.OS === 'web') {
-        try {
-            return localStorage.getItem('access_token');
-        } catch (e) {
-            console.error('Local storage is not available:', e);
-            return null;
-        }
+        return localStorage.getItem(TOKEN_KEY);
     } else {
-        return await SecureStore.getItemAsync('access_token');
+        return await SecureStore.getItemAsync(TOKEN_KEY);
     }
 }
 
-export async function getUsers() {
+export async function deleteToken() {
+    if (Platform.OS === 'web') {
+        localStorage.removeItem(TOKEN_KEY);
+    } else {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+    }
+}
+
+// Fetch user's own details
+export async function getMe() {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/users`, {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -130,155 +89,17 @@ export async function getUsers() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch users');
+            throw new Error(errorData.message || 'Failed to fetch user details');
         }
 
         return await response.json();
     } catch (error) {
-        console.error('getUsers API error:', error);
+        console.error('fetchMe API error:', error);
         throw error;
     }
 }
 
-export async function getUserById(id: number) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            return null; // Return null if user not found
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('getUserById API error:', error);
-        return null;
-    }
-}
-
-export async function getPossiblePropertyManagers() {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/possible_property_manager`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch possible property managers');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('getPossiblePropertyManagers API error:', error);
-        throw error;
-    }
-}
-
-export async function getPossibleFacilityManagers() {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/possible_facility_manager`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch possible facility managers');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('getPossibleFacilityManagers API error:', error);
-        throw error;
-    }
-}
-
-export async function createUser(data: { email: string; password: string; name?: string; role?: string }) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/users`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to create user');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('createUser API error:', error);
-        throw error;
-    }
-}
-
-export async function updateUser(id: number | string, data: { name?: string; email?: string; role?: string }) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update user');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('updateUser API error:', error);
-        throw error;
-    }
-}
-
-export async function deleteUser(id: number | string) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete user');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('deleteUser API error:', error);
-        throw error;
-    }
-}
-
+// Site CRUD operations
 export async function getSites() {
     const token = await getToken();
     try {
@@ -302,7 +123,7 @@ export async function getSites() {
     }
 }
 
-export async function getSite(id: number | string) {
+export async function getSite(id: number) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
@@ -325,7 +146,7 @@ export async function getSite(id: number | string) {
     }
 }
 
-export async function createSite(data: { name: string; address: string; latitude: number; longitude: number; facility_manager: number; property_manager: number }) {
+export async function createSite(name: string, location?: string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites`, {
@@ -334,13 +155,12 @@ export async function createSite(data: { name: string; address: string; latitude
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify({ name, location }),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('createSite Error Response:', JSON.stringify(errorData, null, 2));
-            throw new Error(errorData.detail?.[0]?.msg || errorData.message || 'Failed to create site');
+            throw new Error(errorData.message || 'Failed to create site');
         }
 
         return await response.json();
@@ -350,7 +170,7 @@ export async function createSite(data: { name: string; address: string; latitude
     }
 }
 
-export async function updateSite(id: number, data: { name?: string; address?: string; facility_manager?: number | null; property_manager?: number | null; latitude?: number; longitude?: number }) {
+export async function updateSite(id: number, name: string, location?: string) {
     const token = await getToken();
     try {
         const response = await fetch(`${API_BASE_URL}/sites/${id}`, {
@@ -359,7 +179,7 @@ export async function updateSite(id: number, data: { name?: string; address?: st
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify({ name, location }),
         });
 
         if (!response.ok) {
@@ -397,189 +217,11 @@ export async function deleteSite(id: number) {
     }
 }
 
-export async function updateSiteFacilityManager(siteId: number, managerId: number) {
+// Task CRUD operations
+export async function getTasks() {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/facility_manager`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ facility_manager: managerId }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('updateSiteFacilityManager Error Response:', JSON.stringify(errorData, null, 2));
-            throw new Error(errorData.detail?.[0]?.msg || errorData.message || 'Failed to update facility manager');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('updateSiteFacilityManager API error:', error);
-        throw error;
-    }
-}
-
-export async function updateSitePropertyManager(siteId: number, managerId: number) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/property_manager`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ property_manager: managerId }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('updateSitePropertyManager Error Response:', JSON.stringify(errorData, null, 2));
-            throw new Error(errorData.detail?.[0]?.msg || errorData.message || 'Failed to update property manager');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('updateSitePropertyManager API error:', error);
-        throw error;
-    }
-}
-
-export async function updateSiteName(siteId: number, name: string) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/name`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name }),
-        });
-        if (!response.ok) throw new Error('Failed to update name');
-        return await response.json();
-    } catch (error) {
-        console.error('updateSiteName error:', error);
-        throw error;
-    }
-}
-
-export async function updateSiteAddress(siteId: number, address: string) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/address`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ address }),
-        });
-        if (!response.ok) throw new Error('Failed to update address');
-        return await response.json();
-    } catch (error) {
-        console.error('updateSiteAddress error:', error);
-        throw error;
-    }
-}
-
-export async function updateSiteLatitude(siteId: number, latitude: number) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/latitude`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ latitude }),
-        });
-        if (!response.ok) throw new Error('Failed to update latitude');
-        return await response.json();
-    } catch (error) {
-        console.error('updateSiteLatitude error:', error);
-        throw error;
-    }
-}
-
-export async function updateSiteLongitude(siteId: number, longitude: number) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/longitude`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ longitude }),
-        });
-        if (!response.ok) throw new Error('Failed to update longitude');
-        return await response.json();
-    } catch (error) {
-        console.error('updateSiteLongitude error:', error);
-        throw error;
-    }
-}
-
-export async function getSiteFacilityManager(siteId: number) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/facility_manager`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch facility manager');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('getSiteFacilityManager API error:', error);
-        throw error;
-    }
-}
-
-export async function getSitePropertyManager(siteId: number) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/property_manager`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch property manager');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('getSitePropertyManager API error:', error);
-        throw error;
-    }
-}
-
-// Tasks API
-export async function getTasks(siteId?: number, status?: string) {
-    const token = await getToken();
-    try {
-        let url = `${API_BASE_URL}/tasks`;
-        const params = new URLSearchParams();
-        if (siteId !== undefined) params.append('site_id', siteId.toString());
-        if (status) params.append('status', status);
-        if (params.toString()) url += `?${params.toString()}`;
-
-        const response = await fetch(url, {
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -599,10 +241,33 @@ export async function getTasks(siteId?: number, status?: string) {
     }
 }
 
+export async function getTasksBySiteId(siteId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/sites/${siteId}/tasks`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch tasks');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getTasksBySiteId API error:', error);
+        throw error;
+    }
+}
+
 export async function getMyTasks() {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks/me`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/my`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -622,55 +287,28 @@ export async function getMyTasks() {
     }
 }
 
-export async function getTask(id: number) {
-    const token = await getToken();
-    try {
-        const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch task');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('getTask API error:', error);
-        throw error;
-    }
-}
-
-export async function createTask(data: {
+export async function createTask(task: {
     site_id: number;
     title: string;
     description?: string;
+    priority?: string | number;
     status?: string;
-    priority?: number;
-    assignee?: string;
     due_date?: string | null;
-    photos?: string[];
-    latitude?: number;
-    longitude?: number;
+    assigned_user_id?: number;
 }) {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks`, {
+        const response = await fetch(`${API_BASE_URL}/sites/${task.site_id}/tasks`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(task),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('Create Task Validation Error:', JSON.stringify(errorData, null, 2));
             throw new Error(errorData.message || 'Failed to create task');
         }
 
@@ -681,32 +319,30 @@ export async function createTask(data: {
     }
 }
 
-export async function updateTask(id: number, data: {
-    site_id?: number;
-    title?: string;
-    description?: string;
-    status?: string;
-    priority?: number;
-    assignee?: string;
-    due_date?: string | null;
-    photos?: string[];
-    latitude?: number;
-    longitude?: number;
-}) {
+export async function updateTask(
+    taskId: number,
+    updates: {
+        title?: string;
+        description?: string;
+        priority?: string | number;
+        status?: string;
+        due_date?: string | null;
+        assigned_user_id?: number;
+    }
+) {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(updates),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('Update Task Validation Error:', JSON.stringify(errorData, null, 2));
             throw new Error(errorData.message || 'Failed to update task');
         }
 
@@ -717,10 +353,10 @@ export async function updateTask(id: number, data: {
     }
 }
 
-export async function updateTaskStatus(id: number, status: string) {
+export async function updateTaskStatus(taskId: number, status: string) {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks/${id}/status`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/status`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -741,10 +377,10 @@ export async function updateTaskStatus(id: number, status: string) {
     }
 }
 
-export async function updateTaskPriority(id: number, priority: number) {
+export async function updateTaskPriority(taskId: number, priority: string | number) {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks/${id}/priority`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/priority`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -765,10 +401,10 @@ export async function updateTaskPriority(id: number, priority: number) {
     }
 }
 
-export async function deleteTask(id: number) {
+export async function deleteTask(taskId: number) {
     const token = await getToken();
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -784,6 +420,247 @@ export async function deleteTask(id: number) {
         return await response.json();
     } catch (error) {
         console.error('deleteTask API error:', error);
+        throw error;
+    }
+}
+
+// User management (admin/supervisor only)
+export async function getUsers() {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch users');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('getUsers API error:', error);
+        throw error;
+    }
+}
+
+export async function updateUserRole(userId: number, role: string) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ role }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update user role');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateUserRole API error:', error);
+        throw error;
+    }
+}
+
+export async function deleteUser(userId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete user');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('deleteUser API error:', error);
+        throw error;
+    }
+}
+
+// Photo operations
+export async function getTaskPhotos(taskId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch task photos');
+        }
+
+        return await response.json(); // Returns { photos: TaskPhoto[] }
+    } catch (error) {
+        console.error('getTaskPhotos API error:', error);
+        throw error;
+    }
+}
+
+export async function uploadTaskPhoto(taskId: number, file: { uri: string; type: string; name: string }) {
+    const token = await getToken();
+
+    if (Platform.OS === 'web') {
+        // Web implementation: Keep using FormData as it works perfectly
+        console.log('[Web Upload] Fetching URI:', file.uri);
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        console.log('[Web Upload] Blob created:', { size: blob.size, type: blob.type });
+
+        const fileName = file.name || 'photo.jpg';
+        const fileType = file.type || blob.type || 'image/jpeg';
+        const fileObject = new File([blob], fileName, { type: fileType });
+
+        console.log('[Web Upload] File object created:', { name: fileObject.name, size: fileObject.size, type: fileObject.type });
+
+        const formData = new FormData();
+        formData.append('file', fileObject);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            const responseText = await response.text();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                data = null;
+            }
+
+            if (!response.ok) {
+                const errorMessage = data?.message || responseText || `Upload failed with status ${response.status}`;
+                throw new Error(errorMessage);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('uploadTaskPhoto API error:', error);
+            throw error;
+        }
+    } else {
+        // Native Component: Send Base64 JSON (New Backend Feature)
+        // This is much more reliable than multipart/form-data on React Native
+        console.log('[Native Upload] Reading file for JSON upload:', JSON.stringify(file));
+
+
+        try {
+            // Read file as base64
+            const base64 = await FileSystem.readAsStringAsync(file.uri, {
+                encoding: 'base64',
+            });
+
+            console.log('[Native Upload] File read, base64 length:', base64.length);
+
+            // Send as JSON
+            const payload = {
+                filename: file.name || 'photo.jpg',
+                content: base64,
+                mime_type: file.type || 'image/jpeg'
+            };
+
+            const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const responseText = await response.text();
+            console.log('[Native Upload] Response status:', response.status);
+            console.log('[Native Upload] Response:', responseText);
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                data = null;
+            }
+
+            if (!response.ok) {
+                const errorMessage = data?.message || responseText || `Upload failed with status ${response.status}`;
+                throw new Error(errorMessage);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('[Native Upload] Error:', error);
+            throw error;
+        }
+    }
+}
+
+export async function deleteTaskPhoto(taskId: number, photoId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos/${photoId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete photo');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('deleteTaskPhoto API error:', error);
+        throw error;
+    }
+}
+
+export async function deleteAllTaskPhotos(taskId: number) {
+    const token = await getToken();
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/photos`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete all photos');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('deleteAllTaskPhotos API error:', error);
         throw error;
     }
 }

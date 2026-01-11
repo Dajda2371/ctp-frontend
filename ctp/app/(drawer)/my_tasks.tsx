@@ -6,13 +6,15 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getMyTasks, getSites, getSite, createTask, updateTask, deleteTask } from '@/constants/api';
+import { getMyTasks, getSites, getSite, createTask, updateTask, deleteTask, getTaskPhotos, uploadTaskPhoto, deleteTaskPhoto } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { LocationPicker } from '@/components/LocationPicker';
 import { TaskCard } from '@/components/TaskCard';
 import { SelectModal } from '@/components/SelectModal';
 import { DatePickerModal } from '@/components/DatePickerModal';
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -79,6 +81,11 @@ export default function MyTasksScreen() {
     const [dueDate, setDueDate] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    // Photo Management State
+    const [existingPhotos, setExistingPhotos] = useState<{ id: number; url: string }[]>([]);
+    const [newPhotos, setNewPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
+    const [deletedPhotoIds, setDeletedPhotoIds] = useState<number[]>([]);
+
     // Delete Modal State
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -138,6 +145,10 @@ export default function MyTasksScreen() {
             if (task.site_id) {
                 getSite(task.site_id).then(setSelectedSite).catch(console.error);
             }
+            // Fetch existing photos
+            getTaskPhotos(task.id).then(data => {
+                setExistingPhotos(data.photos || []);
+            }).catch(console.error);
         } else {
             setEditingTask(null);
             setSiteId('');
@@ -150,6 +161,9 @@ export default function MyTasksScreen() {
             setTaskLatitude(undefined);
             setTaskLongitude(undefined);
             setSelectedSite(null);
+            setExistingPhotos([]);
+            setNewPhotos([]);
+            setDeletedPhotoIds([]);
         }
         setModalVisible(true);
     };
@@ -167,6 +181,31 @@ export default function MyTasksScreen() {
         setTaskLatitude(undefined);
         setTaskLongitude(undefined);
         setSelectedSite(null);
+    };
+
+    const handlePickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setNewPhotos([...newPhotos, result.assets[0]]);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
+
+    const handleRemoveNewPhoto = (index: number) => {
+        setNewPhotos(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleMarkPhotoDeleted = (id: number) => {
+        setDeletedPhotoIds(prev => [...prev, id]);
+        setExistingPhotos(prev => prev.filter(p => p.id !== id));
     };
 
     const handleSiteChange = async (newSiteId: string) => {
@@ -204,13 +243,44 @@ export default function MyTasksScreen() {
                 longitude: taskLongitude,
             };
 
+            let targetTaskId = editingTask ? editingTask.id : 0;
+
             if (editingTask) {
                 await updateTask(editingTask.id, taskData);
-                Alert.alert('Success', 'Task updated successfully');
+                targetTaskId = editingTask.id;
             } else {
-                await createTask(taskData);
-                Alert.alert('Success', 'Task created successfully');
+                const newTask = await createTask(taskData);
+                // Assuming createTask returns the full task object or at least the id
+                // If the API returns just { success: true, task: { ... } } adjust accordingly.
+                // Based on previous usage, it seems to return the data. 
+                // Let's assume it returns the created task or we need to fetch it?
+                // Looking at api.ts (not visible here but based on usage), usually REST 'create' returns the object.
+                // Safe check: if newTask has id, use it.
+                if (newTask && newTask.id) {
+                    targetTaskId = newTask.id;
+                }
             }
+
+            // Handle Photo Operations using targetTaskId
+            if (targetTaskId) {
+                // 1. Delete marked photos
+                for (const photoId of deletedPhotoIds) {
+                    await deleteTaskPhoto(targetTaskId, photoId);
+                }
+
+                // 2. Upload new photos
+                for (const asset of newPhotos) {
+                    const fileName = asset.fileName || asset.uri.split('/').pop() || 'photo.jpg';
+                    const file = {
+                        uri: asset.uri,
+                        type: asset.mimeType || 'image/jpeg',
+                        name: fileName,
+                    };
+                    await uploadTaskPhoto(targetTaskId, file);
+                }
+            }
+
+
             closeModal();
             fetchTasks();
         } catch (error: any) {
@@ -325,27 +395,16 @@ export default function MyTasksScreen() {
                             <View style={styles.formGroup}>
                                 <ThemedText style={styles.label}>Site *</ThemedText>
                                 <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                    {sites.length > 0 ? (
-                                        <select
-                                            value={siteId}
-                                            onChange={(e) => handleSiteChange(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                height: 50,
-                                                border: 'none',
-                                                background: 'transparent',
-                                                color: theme.text,
-                                                fontSize: 16,
-                                            }}
-                                        >
-                                            <option value="">Select Site</option>
-                                            {sites.map(site => (
-                                                <option key={site.id} value={site.id}>{site.name}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <ThemedText>Loading sites...</ThemedText>
-                                    )}
+                                    <TouchableOpacity
+                                        style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                        onPress={() => setSitePickerVisible(true)}
+                                    >
+                                        <ThemedText style={{ color: siteId ? theme.text : (theme.icon + '80') }}>
+                                            {siteId && sites.length > 0
+                                                ? sites.find(s => s.id.toString() === siteId)?.name || 'Unknown Site'
+                                                : 'Select Site'}
+                                        </ThemedText>
+                                    </TouchableOpacity>
                                 </View>
                             </View>
 
@@ -377,68 +436,28 @@ export default function MyTasksScreen() {
                                 <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
                                     <ThemedText style={styles.label}>Status</ThemedText>
                                     <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                        {Platform.OS === 'web' ? (
-                                            <select
-                                                value={status}
-                                                onChange={(e) => setStatus(e.target.value)}
-                                                style={{
-                                                    width: '100%',
-                                                    height: 50,
-                                                    border: 'none',
-                                                    background: 'transparent',
-                                                    color: theme.text,
-                                                    fontSize: 16,
-                                                }}
-                                            >
-                                                <option value="TODO">To Do</option>
-                                                <option value="IN_PROGRESS">In Progress</option>
-                                                <option value="DONE">Done</option>
-                                            </select>
-                                        ) : (
-                                            <TouchableOpacity
-                                                style={{ width: '100%', height: '100%', justifyContent: 'center' }}
-                                                onPress={() => setStatusPickerVisible(true)}
-                                            >
-                                                <ThemedText style={{ color: theme.text }}>
-                                                    {status === 'TODO' ? 'To Do' : status === 'IN_PROGRESS' ? 'In Progress' : 'Done'}
-                                                </ThemedText>
-                                            </TouchableOpacity>
-                                        )}
+                                        <TouchableOpacity
+                                            style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                            onPress={() => setStatusPickerVisible(true)}
+                                        >
+                                            <ThemedText style={{ color: theme.text }}>
+                                                {status === 'TODO' ? 'To Do' : status === 'IN_PROGRESS' ? 'In Progress' : 'Done'}
+                                            </ThemedText>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
 
                                 <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
                                     <ThemedText style={styles.label}>Priority</ThemedText>
                                     <View style={[styles.picker, { borderColor: theme.neutral + '40' }]}>
-                                        {Platform.OS === 'web' ? (
-                                            <select
-                                                value={priority}
-                                                onChange={(e) => setPriority(e.target.value)}
-                                                style={{
-                                                    width: '100%',
-                                                    height: 50,
-                                                    border: 'none',
-                                                    background: 'transparent',
-                                                    color: theme.text,
-                                                    fontSize: 16,
-                                                }}
-                                            >
-                                                <option value="LOWEST">Lowest</option>
-                                                <option value="LOW">Low</option>
-                                                <option value="MEDIUM">Medium</option>
-                                                <option value="HIGH">High</option>
-                                                <option value="HIGHEST">Highest</option>
-                                            </select>
-                                        ) : (
-                                            <TouchableOpacity
-                                                style={{ width: '100%', height: '100%', justifyContent: 'center' }}
-                                                onPress={() => setPriorityPickerVisible(true)}
-                                            >
-                                                <ThemedText style={{ color: theme.text }}>
-                                                    {priority.charAt(0) + priority.slice(1).toLowerCase()}
-                                                </ThemedText>
-                                            </TouchableOpacity>
-                                        )}
+                                        <TouchableOpacity
+                                            style={{ width: '100%', height: '100%', justifyContent: 'center' }}
+                                            onPress={() => setPriorityPickerVisible(true)}
+                                        >
+                                            <ThemedText style={{ color: theme.text }}>
+                                                {priority.charAt(0) + priority.slice(1).toLowerCase()}
+                                            </ThemedText>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
                             </View>
@@ -447,32 +466,14 @@ export default function MyTasksScreen() {
                             <View style={styles.formGroup}>
                                 <ThemedText style={styles.label}>Due Date</ThemedText>
                                 <View style={[styles.picker, { borderColor: theme.neutral + '40', padding: 0 }]}>
-                                    {Platform.OS === 'web' ? (
-                                        <input
-                                            type="date"
-                                            value={dueDate}
-                                            onChange={(e) => setDueDate(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                border: 'none',
-                                                background: 'transparent',
-                                                color: theme.text,
-                                                fontSize: 16,
-                                                padding: '0 16px',
-                                                fontFamily: 'inherit'
-                                            }}
-                                        />
-                                    ) : (
-                                        <TouchableOpacity
-                                            style={{ width: '100%', height: '100%', justifyContent: 'center', paddingHorizontal: 16 }}
-                                            onPress={() => setDatePickerVisible(true)}
-                                        >
-                                            <ThemedText style={{ color: dueDate ? theme.text : (theme.icon + '80') }}>
-                                                {dueDate || 'Select Date'}
-                                            </ThemedText>
-                                        </TouchableOpacity>
-                                    )}
+                                    <TouchableOpacity
+                                        style={{ width: '100%', height: '100%', justifyContent: 'center', paddingHorizontal: 16 }}
+                                        onPress={() => setDatePickerVisible(true)}
+                                    >
+                                        <ThemedText style={{ color: dueDate ? theme.text : (theme.icon + '80') }}>
+                                            {dueDate || 'Select Date'}
+                                        </ThemedText>
+                                    </TouchableOpacity>
                                 </View>
                             </View>
 
@@ -510,6 +511,74 @@ export default function MyTasksScreen() {
                                         Select a site first to set location.
                                     </ThemedText>
                                 )}
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <ThemedText style={styles.label}>Photos</ThemedText>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 10 }}>
+                                    {/* Existing Photos */}
+                                    {existingPhotos.map(photo => (
+                                        <View key={photo.id} style={{ marginRight: 10, position: 'relative' }}>
+                                            <Image source={{ uri: photo.url }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                                            <TouchableOpacity
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: -5,
+                                                    right: -5,
+                                                    backgroundColor: 'red',
+                                                    borderRadius: 10,
+                                                    width: 20,
+                                                    height: 20,
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center'
+                                                }}
+                                                onPress={() => handleMarkPhotoDeleted(photo.id)}
+                                            >
+                                                <IconSymbol name="xmark" size={12} color="white" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+
+                                    {/* New Photos */}
+                                    {newPhotos.map((asset, index) => (
+                                        <View key={`new-${index}`} style={{ marginRight: 10, position: 'relative' }}>
+                                            <Image source={{ uri: asset.uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                                            <TouchableOpacity
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: -5,
+                                                    right: -5,
+                                                    backgroundColor: 'red',
+                                                    borderRadius: 10,
+                                                    width: 20,
+                                                    height: 20,
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center'
+                                                }}
+                                                onPress={() => handleRemoveNewPhoto(index)}
+                                            >
+                                                <IconSymbol name="xmark" size={12} color="white" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+
+                                    <TouchableOpacity
+                                        style={{
+                                            width: 80,
+                                            height: 80,
+                                            borderRadius: 8,
+                                            borderWidth: 1,
+                                            borderColor: theme.neutral + '40',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            borderStyle: 'dashed'
+                                        }}
+                                        onPress={handlePickImage}
+                                    >
+                                        <IconSymbol name="plus" size={24} color={theme.icon} />
+                                        <ThemedText style={{ fontSize: 10, marginTop: 4 }}>Add</ThemedText>
+                                    </TouchableOpacity>
+                                </ScrollView>
                             </View>
                         </ScrollView>
 

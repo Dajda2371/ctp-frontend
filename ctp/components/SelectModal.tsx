@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { Modal, View, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -44,7 +44,22 @@ export function SelectModal({
             onRequestClose={onClose}
         >
             <View style={styles.overlay}>
-                <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
+                <ThemedView style={[
+                    styles.container,
+                    { backgroundColor: theme.background },
+                    Platform.select({
+                        ios: {
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                        },
+                        android: {},
+                        web: {
+                            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)',
+                        },
+                    })
+                ]}>
                     <View style={[styles.header, { borderBottomColor: theme.neutral + '30' }]}>
                         <ThemedText type="subtitle" style={styles.title}>{title}</ThemedText>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -102,10 +117,6 @@ const styles = StyleSheet.create({
         maxHeight: height * 0.6,
         borderRadius: 16,
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
         elevation: 10,
     },
     header: {

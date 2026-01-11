@@ -11,7 +11,13 @@ import { getSite, getTasks, createTask, updateTask, deleteTask, getUsers, update
 import { TaskCard } from '@/components/TaskCard';
 import { SelectModal } from '@/components/SelectModal';
 import { DatePickerModal } from '@/components/DatePickerModal';
+
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
+import { uploadTaskPhoto, deleteTaskPhoto, getTaskPhotos, API_BASE_URL } from '@/constants/api';
+import { PhotoEditorModal } from '@/components/PhotoEditorModal';
+import { TaskPhotoItem } from '@/components/TaskPhotoItem';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -79,7 +85,18 @@ export default function SiteTasksScreen() {
     const [priority, setPriority] = useState('MEDIUM');
     const [assignee, setAssignee] = useState('');
     const [dueDate, setDueDate] = useState('');
+
     const [submitting, setSubmitting] = useState(false);
+
+    // Photo Management State
+    const [existingPhotos, setExistingPhotos] = useState<{ id: number; url: string }[]>([]);
+    const [newPhotos, setNewPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
+    const [deletedPhotoIds, setDeletedPhotoIds] = useState<number[]>([]);
+
+    // Photo Editor State
+    const [editorVisible, setEditorVisible] = useState(false);
+    const [editingPhotoUri, setEditingPhotoUri] = useState<string | null>(null);
+    const [editingPhotoIndex, setEditingPhotoIndex] = useState<number | null>(null); // To track which photo is being edited (if new)
 
     // Custom Picker Modal State
     const [statusPickerVisible, setStatusPickerVisible] = useState(false);
@@ -131,6 +148,7 @@ export default function SiteTasksScreen() {
     );
 
     const openModal = (task?: Task) => {
+        setModalVisible(true);
         if (task) {
             setEditingTask(task);
             setTitle(task.title);
@@ -139,6 +157,15 @@ export default function SiteTasksScreen() {
             setPriority(REVERSE_PRIORITY_MAP[task.priority] || 'MEDIUM');
             setAssignee(task.assignee || '');
             setDueDate(task.due_date ? task.due_date.split('T')[0] : '');
+
+            // Initialize empty first, then fetch
+            setExistingPhotos([]);
+            setNewPhotos([]);
+            setDeletedPhotoIds([]);
+
+            getTaskPhotos(task.id).then(data => {
+                setExistingPhotos(data.photos);
+            }).catch(() => { });
         } else {
             setEditingTask(null);
             setTitle('');
@@ -147,8 +174,10 @@ export default function SiteTasksScreen() {
             setPriority('MEDIUM');
             setAssignee('');
             setDueDate('');
+            setExistingPhotos([]);
+            setNewPhotos([]);
+            setDeletedPhotoIds([]);
         }
-        setModalVisible(true);
     };
 
     const closeModal = () => {
@@ -160,6 +189,9 @@ export default function SiteTasksScreen() {
         setPriority('MEDIUM');
         setAssignee('');
         setDueDate('');
+        setExistingPhotos([]);
+        setNewPhotos([]);
+        setDeletedPhotoIds([]);
     };
 
     const handleSubmit = async () => {
@@ -180,13 +212,37 @@ export default function SiteTasksScreen() {
                 due_date: dueDate ? new Date(dueDate).toISOString() : null,
             };
 
+            let targetTaskId = editingTask ? editingTask.id : 0;
+
             if (editingTask) {
                 await updateTask(editingTask.id, taskData);
-                Alert.alert('Success', 'Task updated successfully');
+                targetTaskId = editingTask.id;
             } else {
-                await createTask(taskData);
-                Alert.alert('Success', 'Task created successfully');
+                const newTask = await createTask(taskData);
+                if (newTask && newTask.id) {
+                    targetTaskId = newTask.id;
+                }
             }
+
+            // Handle Photo Operations using targetTaskId
+            if (targetTaskId) {
+                // 1. Delete marked photos
+                for (const photoId of deletedPhotoIds) {
+                    await deleteTaskPhoto(targetTaskId, photoId);
+                }
+
+                // 2. Upload new photos
+                for (const asset of newPhotos) {
+                    const fileName = asset.fileName || asset.uri.split('/').pop() || 'photo.jpg';
+                    const file = {
+                        uri: asset.uri,
+                        type: asset.mimeType || 'image/jpeg',
+                        name: fileName,
+                    };
+                    await uploadTaskPhoto(targetTaskId, file);
+                }
+            }
+
             closeModal();
             fetchData();
         } catch (error: any) {
@@ -194,6 +250,52 @@ export default function SiteTasksScreen() {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handlePickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setNewPhotos([...newPhotos, result.assets[0]]);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
+
+    const handleRemoveNewPhoto = (index: number) => {
+        setNewPhotos(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleMarkPhotoForDeletion = (photoId: number) => {
+        setDeletedPhotoIds([...deletedPhotoIds, photoId]);
+        setExistingPhotos(prev => prev.filter(p => p.id !== photoId));
+    };
+
+    const handleEditNewPhoto = (index: number) => {
+        const asset = newPhotos[index];
+        setEditingPhotoUri(asset.uri);
+        setEditingPhotoIndex(index);
+        setEditorVisible(true);
+    };
+
+    const handleSaveEditedPhoto = async (newUri: string) => {
+        if (editingPhotoIndex !== null) {
+            const updatedPhotos = [...newPhotos];
+            updatedPhotos[editingPhotoIndex] = {
+                ...updatedPhotos[editingPhotoIndex],
+                uri: newUri
+            };
+            setNewPhotos(updatedPhotos);
+        }
+        setEditorVisible(false);
+        setEditingPhotoUri(null);
+        setEditingPhotoIndex(null);
     };
 
     const handleDelete = (task: Task) => {
@@ -511,6 +613,59 @@ export default function SiteTasksScreen() {
                                     )}
                                 </View>
                             </View>
+
+
+                            {/* Photo Upload Section */}
+                            <View style={styles.formGroup}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <ThemedText style={styles.label}>Photos</ThemedText>
+                                    <TouchableOpacity onPress={handlePickImage} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <IconSymbol name="plus.circle.fill" size={20} color={theme.primary} />
+                                        <ThemedText style={{ color: theme.primary, fontWeight: 'bold' }}>Add Photo</ThemedText>
+                                    </TouchableOpacity>
+                                </View>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+                                    {/* Existing Photos */}
+                                    {/* Existing Photos */}
+                                    {existingPhotos.map(photo => (
+                                        <TaskPhotoItem
+                                            key={photo.id}
+                                            photo={photo}
+                                            onDelete={handleMarkPhotoForDeletion}
+                                        />
+                                    ))}
+
+
+                                    {/* New Photos */}
+                                    {newPhotos.map((asset, index) => (
+                                        <View key={`new-${index}`} style={{ marginRight: 10, position: 'relative' }}>
+                                            <TouchableOpacity onPress={() => handleEditNewPhoto(index)}>
+                                                <Image
+                                                    source={{ uri: asset.uri }}
+                                                    style={{ width: 80, height: 80, borderRadius: 8 }}
+                                                    contentFit="cover"
+                                                />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: -5,
+                                                    right: -5,
+                                                    backgroundColor: 'red',
+                                                    borderRadius: 10,
+                                                    width: 20,
+                                                    height: 20,
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center'
+                                                }}
+                                                onPress={() => handleRemoveNewPhoto(index)}
+                                            >
+                                                <IconSymbol name="xmark" size={12} color="white" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </View>
                         </ScrollView>
 
                         <TouchableOpacity
@@ -532,6 +687,14 @@ export default function SiteTasksScreen() {
                     </ThemedView>
                 </KeyboardAvoidingView>
             </Modal>
+
+            {/* Photo Editor Modal */}
+            <PhotoEditorModal
+                visible={editorVisible}
+                imageUri={editingPhotoUri}
+                onClose={() => setEditorVisible(false)}
+                onSave={handleSaveEditedPhoto}
+            />
 
             {/* Custom Picker Modals */}
             <SelectModal
@@ -643,7 +806,7 @@ export default function SiteTasksScreen() {
                     </ThemedView>
                 </View>
             </Modal>
-        </ThemedView>
+        </ThemedView >
     );
 }
 
@@ -710,11 +873,20 @@ const styles = StyleSheet.create({
         borderRadius: 28,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 6,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+            },
+            android: {
+                elevation: 8,
+            },
+            web: {
+                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)',
+            },
+        }),
     },
     // Modal Styles
     modalOverlay: {

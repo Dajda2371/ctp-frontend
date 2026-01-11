@@ -6,12 +6,14 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getTasks, getSites, getSite, createTask, updateTask, deleteTask, getUsers, updateTaskStatus, updateTaskPriority } from '@/constants/api';
+import { getTasks, getSites, getSite, createTask, updateTask, deleteTask, getUsers, updateTaskStatus, updateTaskPriority, getTaskPhotos, uploadTaskPhoto, deleteTaskPhoto } from '@/constants/api';
 import { LocationPicker } from '@/components/LocationPicker';
 import { TaskCard } from '@/components/TaskCard';
 import { SelectModal } from '@/components/SelectModal';
 import { DatePickerModal } from '@/components/DatePickerModal';
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 
 const PRIORITY_MAP: Record<string, number> = {
     'LOWEST': 1,
@@ -82,6 +84,11 @@ export default function TasksScreen() {
     const [selectedSite, setSelectedSite] = useState<Site | null>(null);
     const [dueDate, setDueDate] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    // Photo Management State
+    const [existingPhotos, setExistingPhotos] = useState<{ id: number; url: string }[]>([]);
+    const [newPhotos, setNewPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
+    const [deletedPhotoIds, setDeletedPhotoIds] = useState<number[]>([]);
 
     // Delete Modal State
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -158,6 +165,10 @@ export default function TasksScreen() {
             if (task.site_id) {
                 getSite(task.site_id).then(setSelectedSite).catch(console.error);
             }
+            // Fetch existing photos
+            getTaskPhotos(task.id).then(data => {
+                setExistingPhotos(data.photos || []);
+            }).catch(console.error);
         } else {
             setEditingTask(null);
             setSiteId('');
@@ -169,7 +180,11 @@ export default function TasksScreen() {
             setDueDate('');
             setTaskLatitude(undefined);
             setTaskLongitude(undefined);
+            setTaskLongitude(undefined);
             setSelectedSite(null);
+            setExistingPhotos([]);
+            setNewPhotos([]);
+            setDeletedPhotoIds([]);
         }
         setModalVisible(true);
     };
@@ -186,7 +201,36 @@ export default function TasksScreen() {
         setDueDate('');
         setTaskLatitude(undefined);
         setTaskLongitude(undefined);
+        setTaskLongitude(undefined);
         setSelectedSite(null);
+        setExistingPhotos([]);
+        setNewPhotos([]);
+        setDeletedPhotoIds([]);
+    };
+
+    const handlePickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setNewPhotos([...newPhotos, result.assets[0]]);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
+
+    const handleRemoveNewPhoto = (index: number) => {
+        setNewPhotos(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleMarkPhotoDeleted = (id: number) => {
+        setDeletedPhotoIds(prev => [...prev, id]);
+        setExistingPhotos(prev => prev.filter(p => p.id !== id));
     };
 
     const handleSiteChange = async (newSiteId: string) => {
@@ -224,13 +268,38 @@ export default function TasksScreen() {
                 longitude: taskLongitude,
             };
 
+            let targetTaskId = editingTask ? editingTask.id : 0;
+
             if (editingTask) {
                 await updateTask(editingTask.id, taskData);
-                Alert.alert('Success', 'Task updated successfully');
+                targetTaskId = editingTask.id;
             } else {
-                await createTask(taskData);
-                Alert.alert('Success', 'Task created successfully');
+                const newTask = await createTask(taskData);
+                if (newTask && newTask.id) {
+                    targetTaskId = newTask.id;
+                }
             }
+
+            // Handle Photo Operations using targetTaskId
+            if (targetTaskId) {
+                // 1. Delete marked photos
+                for (const photoId of deletedPhotoIds) {
+                    await deleteTaskPhoto(targetTaskId, photoId);
+                }
+
+                // 2. Upload new photos
+                for (const asset of newPhotos) {
+                    const fileName = asset.fileName || asset.uri.split('/').pop() || 'photo.jpg';
+                    const file = {
+                        uri: asset.uri,
+                        type: asset.mimeType || 'image/jpeg',
+                        name: fileName,
+                    };
+                    await uploadTaskPhoto(targetTaskId, file);
+                }
+            }
+
+
             closeModal();
             fetchTasks();
         } catch (error: any) {
@@ -603,6 +672,74 @@ export default function TasksScreen() {
                                         Select a site first to set location.
                                     </ThemedText>
                                 )}
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <ThemedText style={styles.label}>Photos</ThemedText>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 10 }}>
+                                    {/* Existing Photos */}
+                                    {existingPhotos.map(photo => (
+                                        <View key={photo.id} style={{ marginRight: 10, position: 'relative' }}>
+                                            <Image source={{ uri: photo.url }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                                            <TouchableOpacity
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: -5,
+                                                    right: -5,
+                                                    backgroundColor: 'red',
+                                                    borderRadius: 10,
+                                                    width: 20,
+                                                    height: 20,
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center'
+                                                }}
+                                                onPress={() => handleMarkPhotoDeleted(photo.id)}
+                                            >
+                                                <IconSymbol name="xmark" size={12} color="white" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+
+                                    {/* New Photos */}
+                                    {newPhotos.map((asset, index) => (
+                                        <View key={`new-${index}`} style={{ marginRight: 10, position: 'relative' }}>
+                                            <Image source={{ uri: asset.uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                                            <TouchableOpacity
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: -5,
+                                                    right: -5,
+                                                    backgroundColor: 'red',
+                                                    borderRadius: 10,
+                                                    width: 20,
+                                                    height: 20,
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center'
+                                                }}
+                                                onPress={() => handleRemoveNewPhoto(index)}
+                                            >
+                                                <IconSymbol name="xmark" size={12} color="white" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+
+                                    <TouchableOpacity
+                                        style={{
+                                            width: 80,
+                                            height: 80,
+                                            borderRadius: 8,
+                                            borderWidth: 1,
+                                            borderColor: theme.neutral + '40',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            borderStyle: 'dashed'
+                                        }}
+                                        onPress={handlePickImage}
+                                    >
+                                        <IconSymbol name="plus" size={24} color={theme.icon} />
+                                        <ThemedText style={{ fontSize: 10, marginTop: 4 }}>Add</ThemedText>
+                                    </TouchableOpacity>
+                                </ScrollView>
                             </View>
                         </ScrollView>
 
