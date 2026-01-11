@@ -57,7 +57,7 @@ export function SiteCard({ site, onEdit }: SiteCardProps) {
     };
 
     return (
-        <ThemedView style={[styles.card, { borderColor: theme.neutral + '20', backgroundColor: 'rgba(100, 120, 140, 0.08)' }]}>
+        <ThemedView style={[styles.card, { borderColor: theme.neutral + '20', backgroundColor: theme.card }]}>
             <View style={styles.cardContent}>
                 <ThemedText style={styles.cardTitle}>{site.name}</ThemedText>
                 <ThemedText style={styles.cardSubtitle}>{site.address}</ThemedText>
@@ -89,7 +89,7 @@ export function SiteCard({ site, onEdit }: SiteCardProps) {
             </View>
             <View style={styles.cardActions}>
                 <TouchableOpacity onPress={() => onEdit(site)} style={styles.actionButton}>
-                    <IconSymbol name="pencil" size={20} color={theme.primary} />
+                    <IconSymbol name="pencil" size={20} color={theme.secondary} />
                 </TouchableOpacity>
             </View>
 

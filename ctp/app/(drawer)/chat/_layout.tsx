@@ -9,9 +9,9 @@ export default function ChatLayout() {
 
     return (
         <Stack screenOptions={{
-            headerStyle: { backgroundColor: theme.background },
-            headerTintColor: theme.text,
-            headerTitleStyle: { color: theme.text },
+            headerStyle: { backgroundColor: theme.primary },
+            headerTintColor: '#FFF',
+            headerTitleStyle: { color: '#FFF' },
         }}>
             <Stack.Screen
                 name="index"

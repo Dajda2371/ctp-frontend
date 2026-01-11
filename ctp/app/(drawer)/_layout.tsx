@@ -16,7 +16,6 @@ import { useState } from 'react';
 export function DrawerToggle() {
     const navigation = useNavigation();
     const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme ?? 'light'];
     const { user } = useAuth();
 
     return (
@@ -26,16 +25,16 @@ export function DrawerToggle() {
         >
             <View style={styles.userInfo}>
                 <View style={styles.userTextContainer}>
-                    <Text style={[styles.userName, { color: theme.text }]}>{user?.name}</Text>
+                    <Text style={[styles.userName, { color: '#FFF' }]}>{user?.name}</Text>
                     {user?.role && (
-                        <Text style={[styles.userRole, { color: theme.icon }]}>
+                        <Text style={[styles.userRole, { color: '#B7B9A9' }]}>
                             {ROLE_LABELS[user.role as UserRole] || user.role}
                         </Text>
                     )}
                 </View>
-                <IconSymbol size={20} name="person.fill" color={theme.icon} style={{ marginLeft: 6, marginRight: 12 }} />
+                <IconSymbol size={20} name="person.fill" color="#FFF" style={{ marginLeft: 6, marginRight: 12 }} />
             </View>
-            <IconSymbol size={28} name="line.3.horizontal" color={theme.icon} />
+            <IconSymbol size={28} name="line.3.horizontal" color="#FFF" />
         </TouchableOpacity>
     );
 }
@@ -100,8 +99,14 @@ export default function DrawerLayout() {
             <Drawer
                 drawerContent={(props) => <CustomDrawerContent {...props} />}
                 screenOptions={{
-                    drawerActiveTintColor: theme.tint,
+                    drawerActiveTintColor: '#003150', // CTP Blue for active items
+                    drawerInactiveTintColor: '#FFFFFF',
+                    drawerActiveBackgroundColor: '#FFFFFF',
+                    drawerStyle: { backgroundColor: theme.tint }, // Orange background
+                    drawerLabelStyle: { fontSize: 16, fontWeight: '500' },
                     headerShown: true,
+                    headerStyle: { backgroundColor: theme.primary },
+                    headerTintColor: '#FFF',
                     headerLeft: () => null,
                     headerRight: () => <DrawerToggle />,
                     drawerPosition: 'right',

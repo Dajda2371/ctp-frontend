@@ -63,7 +63,7 @@ export default function LoginScreen() {
                         <View style={styles.inputGroup}>
                             <ThemedText style={styles.label}>{i18n.t('login.email')}</ThemedText>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
+                                style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.card }]}
                                 placeholder="email@ctp.eu"
                                 placeholderTextColor={theme.icon + '80'}
                                 value={email}
@@ -76,7 +76,7 @@ export default function LoginScreen() {
                         <View style={styles.inputGroup}>
                             <ThemedText style={styles.label}>{i18n.t('login.password')}</ThemedText>
                             <TextInput
-                                style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.background }]}
+                                style={[styles.input, { borderColor: theme.neutral + '40', color: theme.text, backgroundColor: theme.card }]}
                                 placeholder="••••••••"
                                 placeholderTextColor={theme.icon + '80'}
                                 value={password}

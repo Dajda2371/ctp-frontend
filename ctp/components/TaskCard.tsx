@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Linking, Platform, Alert } from 're
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { Colors, BrandColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getAddressFromCoordinates } from '@/utils/geocoding';
 import { LocationPicker } from '@/components/LocationPicker';
@@ -63,20 +63,20 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'TODO': return '#FF9500';
-            case 'IN_PROGRESS': return '#007AFF';
-            case 'DONE': return '#34C759';
+            case 'TODO': return BrandColors.ctpOrange;
+            case 'IN_PROGRESS': return BrandColors.ctpGray; // Soft secondary blue
+            case 'DONE': return '#73A580'; // Muted green
             default: return theme.text;
         }
     };
 
     const getPriorityColor = (priority: number) => {
         switch (priority) {
-            case 1: return '#8E8E93';
-            case 2: return '#32ADE6';
-            case 3: return '#FF9500';
-            case 4: return '#FF2D55';
-            case 5: return '#AF52DE';
+            case 1: return BrandColors.ctpGray;
+            case 2: return BrandColors.ctpGray;
+            case 3: return BrandColors.ctpOrange;
+            case 4: return BrandColors.ctpRed;
+            case 5: return BrandColors.ctpRed;
             default: return theme.text;
         }
     };
@@ -157,7 +157,7 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
     };
 
     return (
-        <ThemedView style={[styles.card, { borderColor: theme.neutral + '20', backgroundColor: 'rgba(100, 120, 140, 0.08)' }]}>
+        <ThemedView style={[styles.card, { borderColor: theme.neutral + '20', backgroundColor: theme.card }]}>
             <View style={styles.cardHeader}>
                 <View style={styles.taskBadges}>
                     <TouchableOpacity onPress={onStatusPress} disabled={!onStatusPress}>
@@ -176,7 +176,7 @@ export function TaskCard({ task, siteName, onEdit, onStatusPress, onPriorityPres
                     </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={() => onEdit(task)} style={styles.actionButton}>
-                    <IconSymbol name="pencil" size={20} color={theme.primary} />
+                    <IconSymbol name="pencil" size={20} color={theme.secondary} />
                 </TouchableOpacity>
             </View>
 
